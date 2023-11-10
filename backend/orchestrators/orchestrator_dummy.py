@@ -1,8 +1,8 @@
-from .module_base import ModuleBase
+from .orchestrator_base import OrchestratorBase
 from model_handler import ModelHandler
 
 
-class Module(ModuleBase):
+class Orchestrator(OrchestratorBase):
     def __init__(self):
         super().__init__()
 

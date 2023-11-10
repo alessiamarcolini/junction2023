@@ -4,9 +4,6 @@ class ModelHandler:
     def __init__(self):
         pass
 
-    def prompt(self):
-        return ""
-
     def send_text(self, text):
         pass
 
@@ -14,4 +11,13 @@ class ModelHandler:
         pass
 
     def finalize(self):
+        pass
+
+    def messages(self) -> List[str]:
+        pass
+
+    def update_status_message(self, status: str) -> None:
+        pass
+
+    def update_progress_bar(self, progress: Union[int, None]) -> None:
         pass
