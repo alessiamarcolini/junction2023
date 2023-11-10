@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Message } from "../Messages";
 import { Overlay } from "./Overlay";
+import { Modal } from "./Modal";
 
 interface MessageContainerProps {
   message: Message;
@@ -9,6 +10,7 @@ interface MessageContainerProps {
 export const MessageContainer = ({ message }: MessageContainerProps) => {
   const [currentOverlay, setCurrentOverlay] = useState<string>("");
   const [showOverlay, setShowOverlay] = useState<boolean>(false);
+  const [showModal, setShowModal] = useState<boolean>(false);
   return (
     <div
       className={`${
