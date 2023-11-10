@@ -1,6 +1,6 @@
-from model_handler import ModelHandler
+class ModuleBase:
+    def __init__():
+        pass
 
-
-class LlamaModule:
-    def execute(self, handler: ModelHandler):
+    def execute(request: any) -> any:
         pass
