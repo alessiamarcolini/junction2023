@@ -34,17 +34,40 @@ export const MessageContainer = ({ message }: MessageContainerProps) => {
             fragment.type === "text" ? (
               <div key={fragmentIdx}>{fragment.text}</div>
             ) : (
-              <div key={fragmentIdx} className="w-4/5 py-12 mx-auto" onClick={() => {
-                setCurrentOverlay(fragment.src)
-                setShowOverlay(true)
-              }}>
+              <div
+                key={fragmentIdx}
+                className="w-4/5 py-12 mx-auto"
+                onClick={() => {
+                  setCurrentOverlay(fragment.src);
+                  setShowOverlay(true);
+                }}
+              >
                 <img src={fragment.src} alt={fragment.src} />
               </div>
             ),
           )}
+          {message.owner === "bot" && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="text-secondary-300 rounded-xl border-2 border-secondary-300 hover:opacity-200 p-2 text-xs"
+            >
+              Show decision
+            </button>
+          )}
         </div>
       </div>
-      {showOverlay && <Overlay src={currentOverlay} callback={() => setShowOverlay(false)}/>}
+      {showModal && (
+        <Modal
+          callback={() => {
+            setShowModal(false);
+          }}
+        >
+          <div>{message.decision}</div>
+        </Modal>
+      )}
+      {showOverlay && (
+        <Overlay src={currentOverlay} callback={() => setShowOverlay(false)} />
+      )}
     </div>
   );
 };

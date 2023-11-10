@@ -31,6 +31,7 @@ function App() {
         },
       ],
       owner: "bot",
+      decision: 'yolo'
     },
     {
       fragments: [
@@ -48,6 +49,7 @@ function App() {
         },
       ],
       owner: "bot",
+      decision: 'yolo again'
     },
   ];
 
