@@ -21,3 +21,6 @@ class ModelHandler:
 
     def update_progress_bar(self, progress: Union[int, None]) -> None:
         pass
+
+    def send_debug_thoughts(self, thought: str) -> None:
+        pass

@@ -30,3 +30,7 @@ class ConsoleModelHandler(ModelHandler):
     def update_progress_bar(self, progress: Union[int, None]) -> None:
         print(progres_percent)
         pass
+
+    def send_debug_thoughts(self, thought: str) -> None:
+        print(thought)
+        pass
