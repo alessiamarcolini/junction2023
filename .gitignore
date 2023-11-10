@@ -160,4 +160,4 @@ cython_debug/
 #.idea/
 
 # LLM models
-/junction/models/*
+/models/*
