@@ -6,9 +6,11 @@ class ConsoleModelHandler(ModelHandler):
         super().__init__()
         self.__prompt = None
         self.__finalized = False
+        self.__quiet = False
 
     def send_text(self, text):
-        print(text)
+        if not self.__quiet:
+            print(text)
 
     def prompt(self):
         if self.__prompt is None:
@@ -20,3 +22,5 @@ class ConsoleModelHandler(ModelHandler):
 
     def finalize(self):
         self.__finalized = True
+        if not self.__quiet:
+            print("Final output sent")
