@@ -15,3 +15,6 @@ class ModelHandler:
 
     def finalize(self):
         pass
+
+    def messages(self) -> List[str]:
+        pass
