@@ -1,5 +1,7 @@
-from model_handler import ConsoleModelHandler
 import sys
+
+from model_handler import ConsoleModelHandler
+
 
 def main():
     module_name = sys.argv[1]
