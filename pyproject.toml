@@ -1,0 +1,14 @@
+[tool.isort]
+profile = "black"
+
+[tool.black]
+target-version = ["py311"]
+exclude = '''
+(
+  /(
+      \.git
+    | \.github
+    | \.venv
+  )/
+)
+'''
