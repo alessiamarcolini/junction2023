@@ -8,7 +8,7 @@ interface MessageContainerProps {
 
 export const MessageContainer = ({ message }: MessageContainerProps) => {
   const [currentOverlay, setCurrentOverlay] = useState<string>("");
-  const [showOverlay, setShowOverlay] = useState<bool>(false);
+  const [showOverlay, setShowOverlay] = useState<boolean>(false);
   return (
     <div
       className={`${
