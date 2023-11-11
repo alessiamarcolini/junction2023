@@ -3,3 +3,4 @@ python
 typing-extensions
 python-socketio
 eventlet
+langchain
