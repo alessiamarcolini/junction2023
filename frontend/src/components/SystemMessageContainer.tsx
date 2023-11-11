@@ -35,15 +35,15 @@ export const SystemMessageContainer = ({
   }, [ref]);
   return (
     <div className={"justify-items-start grid  h-fit w-full"}>
-      <div className="flex items-end w-full">
+      <div className="flex items-end w-full pl-2">
         <img
-          className="w-10 h-10 aspect-square"
+          className="w-10 h-10 aspect-square mb-2"
           src="https://ia.leadoo.com/upload/images/bot_icon/WTYxNb0TNUeTcKL9.png"
           alt=""
         />
         <div
           ref={ref}
-          className="bg-secondary-100 shadow-secondary-200 text-secondary-300 mr-16 rounded-xl p-4 m-4 shadow-lg w-full"
+          className="bg-secondary-100 shadow-secondary-200 text-secondary-300 mr-16 rounded-xl p-4 m-2 shadow-lg w-full"
         >
           {message.fragments.map((fragment, fragmentIdx) => {
             switch (fragment.type) {
