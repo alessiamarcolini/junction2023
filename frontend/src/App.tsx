@@ -42,47 +42,36 @@ function App() {
   useSocketEvent("text_received", (message: TextReceivedEvent) => {
     setAssets((assets) => {
       const regex = "^<asset:.*";
-      const words = message.text.split(" ");
-      const rawFragments: MessageFragment[] = words.map((word) => {
-        if (!word.match(regex)) {
-          return {
-            type: "text",
-            text: word,
-          };
-        }
+      const word = message.text;
+      if (word.match(regex)) {
         const tokens = word.slice(1, -1).split(":");
         if (tokens[1] === "image") {
-          const fragment: ImageFragment = {
-            type: "image",
-            src: `${STATIC_PATH}${tokens[2]}`,
-          };
-          return fragment;
+          return [
+            ...assets,
+            {
+              type: "image",
+              src: `${STATIC_PATH}${tokens[2]}`,
+            },
+          ];
         }
-        const fragment: HtmlFragment = {
-          type: "html",
-          src: `${STATIC_PATH}${tokens[2]}`,
-        };
-        return fragment;
-      });
-
-      const newFragments = [...assets, ...rawFragments].reduce<
-        MessageFragment[]
-      >((acc: MessageFragment[], curr: MessageFragment) => {
-        if (
-          acc.length === 0 ||
-          acc[acc.length - 1].type !== "text" ||
-          curr.type !== "text"
-        ) {
-          return [...acc, curr];
+        if (tokens[1] === "html") {
+          return [
+            ...assets,
+            {
+              type: "html",
+              src: `${STATIC_PATH}${tokens[2]}`,
+            },
+          ];
         }
-        const fragment = {
-          ...(acc[acc.length - 1] as TextFragment),
-          text: `${(acc[acc.length - 1] as TextFragment).text} ${curr.text}`,
-        };
-        return [...acc.slice(0, -1), fragment];
-      }, []);
-
-      return newFragments;
+      }
+      if (assets.length === 0 || assets[assets.length - 1].type !== "text") {
+        return [...assets, { type: "text", text: word }];
+      }
+      const fragment = {
+        ...(assets[assets.length - 1] as TextFragment),
+        text: `${(assets[assets.length - 1] as TextFragment).text}${word}`,
+      };
+      return [...assets.slice(0, -1), fragment];
     });
   });
   useSocketEvent("debug_thought_received", (message: TextReceivedEvent) =>
