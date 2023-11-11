@@ -6,15 +6,14 @@ import {
   MessageFragment,
   TextFragment,
 } from "./Messages";
-import { DemoMessageContainer } from "./components/DemoMessageContainer";
+import DemoDiscussions from "./components/DemoDiscussions";
 import { MessageContainer } from "./components/MessageContainer";
-import { Spinner } from "./components/Spinner";
 import { WrapperContainer } from "./components/WrapperContainer";
-import { RECOMMENDED_DEMO_MESSAGES, STATIC_PATH } from "./constants";
+import { STATIC_PATH } from "./constants";
 import { useSocket, useSocketEvent } from "./hooks/useSocket";
 import { Execution, Request, TextReceivedEvent } from "./types";
-import { calculateSpinnerMessage, scrollToBottom } from "./utils";
-import { SystemMessageContainer } from "./components/SystemMessageContainer";
+import { scrollToBottom } from "./utils";
+import InProgressContainer from "./components/InProgressContainer";
 
 function App() {
   const [input, setInput] = useState<string>("");
@@ -139,56 +138,17 @@ function App() {
       <div className="flex flex-col gap-4 w-full max-w-2xl px-4 bg-secondary-300 rounded-lg m-4 mt-0 overflow-hidden">
         <div className="bg-secondary-100 flex flex-col w-full h-full rounded-lg overflow-scroll">
           {messageHistory.length === 0 && (
-            <>
-              <SystemMessageContainer
-                hideDecision
-                message={{
-                  fragments: [
-                    {
-                      type: "text",
-                      text: "Hello there!",
-                    },
-                    {
-                      type: "text",
-                      text: "Welcome to the EcoGen chatbot service! How can I help you today?",
-                    },
-                    {
-                      type: "text",
-                      text: "You might send your own questions or use one of our sample questions below.",
-                    },
-                  ],
-                  decision: [],
-                  senderRole: "system",
-                }}
-              />
-              <SystemMessageContainer
-                hideDecision
-                message={{
-                  fragments: [
-                    {
-                      type: "text",
-                      text: "Please keep in mind that for this demo I am only capable of answering questions regarding energy prices or steel price predictions.",
-                    },
-                  ],
-                  decision: [],
-                  senderRole: "system",
-                }}
-              />
-              {RECOMMENDED_DEMO_MESSAGES.map((demoMsg, idx) => (
-                <DemoMessageContainer
-                  key={idx}
-                  message={demoMsg}
-                  onClickCallback={() => demoMessageClickHandler(demoMsg)}
-                />
-              ))}
-            </>
+              <DemoDiscussions onClick={demoMessageClickHandler} />
           )}
           {messageHistory.map((message, idx) => (
             <MessageContainer message={message} key={idx} />
           ))}
+
           {executionState && executionState.progress != null && (
-            <Spinner
-              message={calculateSpinnerMessage(executionState.progress)}
+            <InProgressContainer
+              fragments={assets}
+              progress={executionState.progress}
+              status={executionState.status}
             />
           )}
           <div ref={(el) => (messagesEnd.current = el)}></div>
