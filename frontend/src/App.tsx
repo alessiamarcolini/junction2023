@@ -3,20 +3,27 @@ import { Message, TextFragment } from "./Messages";
 import { MessageContainer } from "./components/MessageContainer";
 import { Spinner } from "./components/Spinner";
 import { useSocket, useSocketEvent } from "./hooks/useSocket";
+import { Execution, Request } from "./types";
+import { calculateSpinnerMessage, scrollToBottom } from "./utils";
 
 function App() {
   const [input, setInput] = useState<string>("");
   const messagesEnd = useRef<HTMLDivElement | null>(null);
   const [messageHistory, setMessageHistory] = useState<Message[]>([]);
+  const [executionState, setExecutionState] = useState<Execution | undefined>(
+    undefined,
+  );
 
-  const scrollToBottom = () => {
-    messagesEnd?.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => scrollToBottom(), [messageHistory]);
+  useEffect(() => scrollToBottom(messagesEnd), [messageHistory]);
 
   const io = useSocket();
   useSocketEvent("connect", () => console.log("reeeeeeeeee"));
+  useSocketEvent("execution_created", (execution: Execution) =>
+    setExecutionState(execution),
+  );
+  useSocketEvent("execution_updated", (execution: Execution) =>
+    setExecutionState(execution),
+  );
 
   const onClickHandler = () => {
     const data: Message = {
@@ -25,7 +32,7 @@ function App() {
     };
     const newHistory = [...messageHistory, data];
     setMessageHistory(newHistory);
-    const emitData = newHistory.map((message) => ({
+    const emitData: Request[] = newHistory.map((message) => ({
       message: message.fragments
         .filter((fragment) => fragment.type === "text")
         .map((data) => (data as TextFragment).text)
@@ -47,7 +54,11 @@ function App() {
           {messageHistory.map((message, idx) => (
             <MessageContainer message={message} key={idx} />
           ))}
-          <Spinner message="76%" />
+          {executionState && executionState.progress != null && (
+            <Spinner
+              message={calculateSpinnerMessage(executionState.progress)}
+            />
+          )}
           <div ref={(el) => (messagesEnd.current = el)}></div>
         </div>
         <div className="flex gap-4 w-full">
