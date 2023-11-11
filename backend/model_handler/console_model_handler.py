@@ -4,6 +4,8 @@ from backend.types.message_types import ChatCompletionRequestMessage, ChatComple
 from typing import Any, List, Optional, Dict, Union
 from typing_extensions import TypedDict, NotRequired, Literal
 
+import logging
+
 class ConsoleModelHandler(ModelHandler):
     def __init__(self):
         super().__init__()
