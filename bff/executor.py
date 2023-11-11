@@ -78,7 +78,7 @@ class Executor:
             print(f"Executor({self.executor_sio.sid}) Recieved asset {data[0]}, saved to {filename}")
             self.user_sio.emit(
                 "asset_received",
-                {"id": self.execution["id"], "type": type, "filename": filename},
+                {"id": self.execution["id"], "type": type, "filename": f"{id}.{type}"},
             )
 
         elif event == "update_status_message":
