@@ -18,8 +18,9 @@ function App() {
   );
   const [currentMessage, setCurrentMessage] = useState<string>("");
   const [decision, setDecision] = useState<string[]>([]);
+  const [generating, setGenerating] = useState<boolean>(false);
 
-  useEffect(() => scrollToBottom(messagesEnd), [messageHistory]);
+  useEffect(() => scrollToBottom(messagesEnd), [messageHistory, executionState, currentMessage]);
 
   const io = useSocket();
   useSocketEvent("connect", () => console.log("reeeeeeeeee"));
@@ -47,31 +48,12 @@ function App() {
     ]);
     setCurrentMessage("");
     setDecision([]);
+    setGenerating(false)
   });
 
-  const demoMessageClickHandler = (message: string) => {
-    setMessageHistory([
-      {
-        owner: "user",
-        fragments: [
-          {
-            type: "text",
-            text: message,
-          },
-        ],
-        decision: [],
-      },
-    ]);
-  };
-
-  const onClickHandler = () => {
-    const data: Message = {
-      fragments: [{ type: "text", text: input }],
-      owner: "user",
-      decision: [],
-    };
+  const onClickHandler = (message: Message) => {
     setInput("");
-    const newHistory = [...messageHistory, data];
+    const newHistory = [...messageHistory, message];
     setMessageHistory(newHistory);
     const emitData: Request[] = newHistory.map((message) => ({
       message: message.fragments
@@ -80,10 +62,25 @@ function App() {
         .join(" "),
       sender: message.owner,
     }));
+    setGenerating(true);
     io.emit("execute", { messages: emitData });
   };
 
-  console.log({ executionState });
+  const demoMessageClickHandler = (message: string) => {
+    const msg: Message = {
+      owner: "user",
+      fragments: [
+        {
+          type: "text",
+          text: message,
+        },
+      ],
+      decision: [],
+    };
+    setMessageHistory([msg]);
+    onClickHandler(msg);
+  };
+
   return (
     <WrapperContainer>
       <div className="flex flex-col gap-4 w-full max-w-2xl px-4 bg-secondary-300 rounded-lg m-4 mt-0 overflow-hidden">
@@ -105,6 +102,16 @@ function App() {
           {messageHistory.map((message, idx) => (
             <MessageContainer message={message} key={idx} />
           ))}
+          {currentMessage.length > 1 && (
+            <MessageContainer
+              hideDecision
+              message={{
+                fragments: [{ type: "text", text: `${currentMessage} ...` }],
+                owner: "system",
+                decision: [],
+              }}
+            />
+          )}
           {executionState && executionState.progress != null && (
             <Spinner
               message={calculateSpinnerMessage(executionState.progress)}
@@ -118,16 +125,29 @@ function App() {
             placeholder="Input..."
             onChange={(e) => setInput(e.target.value)}
             value={input}
+            disabled={generating}
             onKeyDown={(e) => {
               if (e.code === "Enter") {
-                onClickHandler();
+                const data: Message = {
+                  fragments: [{ type: "text", text: input }],
+                  owner: "user",
+                  decision: [],
+                };
+                onClickHandler(data);
               }
             }}
           />
           <button
-            disabled={input.length === 0}
-            onClick={() => onClickHandler()}
-            className="bg-secondary-200 min-w-[80px] rounded-lg h-full border-2 border-secondary-200 p-4 text-center duration-200 hover:bg-secondary-100 disabled:bg-secondary-300 disabled:border-secondary-200 disabled:text-secondary-200"
+            disabled={generating || input.length === 0}
+            onClick={() => {
+              const data: Message = {
+                fragments: [{ type: "text", text: input }],
+                owner: "user",
+                decision: [],
+              };
+              onClickHandler(data);
+            }}
+            className="bg-secondary-200 min-w-[80px] rounded-lg h-full border-2 border-secondary-200 p-4 text-center duration-200 hover:bg-secondary-100 disabled:opacity-0"
           >
             Send
           </button>

@@ -5,9 +5,10 @@ import { Modal } from "./Modal";
 
 interface MessageContainerProps {
   message: Message;
+  hideDecision?: boolean
 }
 
-export const MessageContainer = ({ message }: MessageContainerProps) => {
+export const MessageContainer = ({ message, hideDecision = false }: MessageContainerProps) => {
   const [currentOverlay, setCurrentOverlay] = useState<string>("");
   const [showOverlay, setShowOverlay] = useState<boolean>(false);
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -48,7 +49,7 @@ export const MessageContainer = ({ message }: MessageContainerProps) => {
               </div>
             ),
           )}
-          {message.owner === "system" && (
+          {message.owner === "system" && !hideDecision && (
             <button
               onClick={() => setShowModal(true)}
               className="text-secondary-300 rounded-xl border-2 border-secondary-300 hover:opacity-200 p-2 mt-4 text-xs"
