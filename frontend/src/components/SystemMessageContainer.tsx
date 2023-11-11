@@ -24,10 +24,10 @@ export const SystemMessageContainer = ({
       if (ref.current) {
         setWidth(ref.current.offsetWidth);
       }
+    };
       if (ref.current) {
         setWidth(ref.current.offsetWidth);
       }
-    };
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
   }, [ref]);
