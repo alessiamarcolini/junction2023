@@ -61,9 +61,7 @@ class Orchestrator(OrchestratorBase):
         if "ENERGY PRICE FORECAST MODEL" in models:
             handler.update_status_message(f"Running energy forecast for {days} days...")
             logging.info(f"Running energy forecast for {days} days")
-            energyPredictions, energyPlot = EnergyModule().execute(
-                horizon=days
-            )
+            energyPredictions, energyPlot = EnergyModule().execute(horizon=days)
 
             moduleResults["energy"] = {
                 "text": energyPredictions,
