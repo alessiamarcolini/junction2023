@@ -5,6 +5,9 @@ import uuid
 from model_handler.model_handler import ModelHandler
 
 
+from backend.model_handler.model_handler import ModelHandler
+from backend.types.message_types import ChatCompletionRequestMessage, ChatCompletionRequestUserMessage
+
 class ConsoleModelHandler(ModelHandler):
     def __init__(self):
         super().__init__()
