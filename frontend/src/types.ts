@@ -11,3 +11,8 @@ export type Execution = {
   status: "requested" | "scheduled" | "started" | "completed";
   progress: number | null;
 };
+
+export type TextReceivedEvent = {
+  id: string;
+  text: string;
+}
