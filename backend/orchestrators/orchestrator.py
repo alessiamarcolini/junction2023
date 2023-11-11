@@ -22,4 +22,10 @@ class Orchestrator(OrchestratorBase):
 
         # We have stuff to do
         if goal == "explain":
-            logging.info("Explaining model output...")
+            models = orchestrationPlan["orchestrationPlan"]["relevantModels"]
+            logging.info(f"Explaining model output using models: {models}")
+
+            # Get model parameters required
+        
+        # Update progress bar for deny request
+        handler.update_progress_bar(50)

@@ -181,6 +181,8 @@ class PlannerModule(ModuleBase):
                 raise RuntimeError("No usable response from accept/deny LLM model")
         
         # Return: Question not relevant
+        handler.send_debug_thoughts(denyResponse["reasoning"])
+        handler.update_progress_bar(25)
         if denyResponse["outcome"] == "DENY":
             return {
                 "orchestrationPlan": {
@@ -231,6 +233,7 @@ class PlannerModule(ModuleBase):
                 raise RuntimeError("No usable response from LLM model")
 
         # Return output based on model use recommendations
+        handler.send_debug_thoughts(modelResponse["reasoning"])
         if len(modelResponse["models"]) >= 1:
             return {
                 "orchestrationPlan": {
@@ -245,6 +248,7 @@ class PlannerModule(ModuleBase):
             "orchestrationPlan": {
                 "goal": "deny",
                 "reasoning": modelResponse["reasoning"],
+                "relevantModels": [],
             },
             "messages": messages,
         }
