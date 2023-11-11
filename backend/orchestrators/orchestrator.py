@@ -6,6 +6,8 @@ from orchestrators.orchestrator_base import OrchestratorBase
 from model_handler.model_handler import ModelHandler
 from modules.module_planner import PlannerModule
 from modules.module_time import TimeModule
+from modules.module_energy import EnergyModule
+from modules.module_steel import SteelModule
 
 # 3rd party packages
 import numpy as np
@@ -44,7 +46,20 @@ class Orchestrator(OrchestratorBase):
             # Call-out to energy module relevant modules
             moduleResults = {}
             if "ENERGY PRICE FORECAST MODEL" in models:
-                handler.update_status_message(f"Running energy forecast for {days} days")
-                
+                handler.update_status_message(f"Running energy forecast for {days} days...")
+                logging.info(f"Running energy forecast for {days} days")
+                energyPredictions, energyPlot = EnergyModule().execute(
+                    horizon=days
+                )
+            
+            if "STEEL PRICE FORECAST MODEL" in models:
+                handler.update_status_message(f"Running steel forecast for {months} months...")
+                logging.info(f"Running steel forecast for {months} months")
+                steelPredictions, steelPlot = SteelModule(
+                    model_name="Steel"
+                ).execute(horizon=months)
+
+
+
         # Update progress bar for deny request
         handler.update_progress_bar(50)
