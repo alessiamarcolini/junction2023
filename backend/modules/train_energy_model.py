@@ -362,6 +362,7 @@ def plot_trend(previous_data, predicted_data, horizon, last_date):
         width=480,
         height=480,
     )
+    p.xaxis.major_label_orientation = 45
 
     source_forecast = ColumnDataSource(forecast_df)
     forecast_dots = p.circle(
