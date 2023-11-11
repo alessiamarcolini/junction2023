@@ -120,13 +120,13 @@ class DenyModule(ModuleBase):
         )
         result = []
         for output in responseStream:
-            if output["choices"]["finish_reason"] is None:
+            if output["choices"][0]["finish_reason"] is None:
                 try:
-                    word = output["choices"]["delta"]["content"]
+                    word = output["choices"][0]["delta"]["content"]
+                    handler.send_text(word)
+                    result.append(word)
+
                 except KeyError as e:
                     logging.info(f"Key error encountered for model output stream {e}")
-                
-                handler.send_text(word)
-                result.append(word)
 
         logging.info(f"Deny response generated: {result}")
