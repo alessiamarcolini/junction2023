@@ -1,5 +1,6 @@
 import logging
-from typing import List, Union
+from typing import Union
+import uuid
 
 from model_handler.model_handler import ModelHandler
 
@@ -13,8 +14,10 @@ class ConsoleModelHandler(ModelHandler):
     def send_text(self, text):
         print(text)
 
-    def send_image(self, image):
-        print(f"Image recieved {image}")
+    def send_asset(self, type, asset)-> str:
+        id = str(uuid.uuid4())
+        filename = f"{id}.{type}"
+        print(f"Sending {filename} {asset}")
 
     def finalize(self):
         self.__finalized = True

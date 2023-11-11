@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/socket.io': "http://localhost:5000"
+      '/socket.io': "http://localhost:5000",
+      '/outfiles': "http://localhost:5000"
     }
   }
 })
