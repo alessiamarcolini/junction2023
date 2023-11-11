@@ -9,6 +9,7 @@ class Orchestrator(OrchestratorBase):
         super().__init__()
 
     def execute(self, handler: ModelHandler):
+        print(f"got prompt {handler.messages()}")
         handler.update_status_message("started")
         time.sleep(2)
         handler.update_status_message("run_module_x")

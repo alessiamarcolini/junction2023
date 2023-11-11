@@ -11,7 +11,7 @@ export const MessageContainer = ({
   message,
   hideDecision = false,
 }: MessageContainerProps) => {
-  return message.owner === "system" ? (
+  return message.senderRole === "system" ? (
     <SystemMessageContainer message={message} hideDecision={hideDecision} />
   ) : (
     <UserMessageContainer message={message} />
