@@ -8,6 +8,11 @@ from typing import Literal
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from bokeh.embed import file_html
+from bokeh.models import ColumnDataSource, DatetimeTickFormatter, HoverTool
+from bokeh.palettes import Category10
+from bokeh.plotting import figure
+from bokeh.resources import CDN
 from dateutil.relativedelta import relativedelta
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
@@ -320,7 +325,103 @@ def _formulate_explanation_string(
         "- the feature 'generation_fossil_brown_coal/lignite' represents the coal/lignite generation in MW.\n"
     )
 
-    return data_explanation
+    plot_html_str = plot_trend(
+        previous_data=latest_horizon_target_values,
+        predicted_data=predictions,
+        horizon=horizon,
+        last_date=last_date,
+    )
+
+    return data_explanation, plot_html_str
+
+
+def plot_trend(previous_data, predicted_data, horizon, last_date):
+    predicted_days = _generate_upcoming_days(last_date, horizon)
+
+    # Sample Data
+    past_data = {
+        "time": np.array(previous_data["time"]),
+        "price": np.array(previous_data["price actual"]),
+    }
+    last_date = str(previous_data["time"].max())
+    print(last_date)
+    forecast_data = {
+        "time": predicted_days,
+        "price": predicted_data,
+    }
+
+    past_df = pd.DataFrame(past_data)
+    past_df["time"] = pd.to_datetime(past_df["time"])
+    forecast_df = pd.DataFrame(forecast_data)
+    forecast_df["time"] = pd.to_datetime(forecast_df["time"])
+    # Create Bokeh plot
+    p = figure(
+        title="Energy Price Forecast",
+        x_axis_label="Date",
+        y_axis_label="Energy price [EUR/MWh]",
+    )
+
+    source_forecast = ColumnDataSource(forecast_df)
+    forecast_dots = p.circle(
+        x="time",
+        y="price",
+        size=10,
+        color=Category10[3][1],
+        legend_label="Forecast Data",
+        source=source_forecast,
+    )
+    forecast_line = p.line(
+        x="time",
+        y="price",
+        line_width=4,
+        color=Category10[3][1],
+        legend_label="Forecast Data",
+        source=source_forecast,
+    )
+    p.line(
+        pd.concat([past_df["time"].tail(1), forecast_df["time"].head(1)]),
+        pd.concat([past_df["price"].tail(1), forecast_df["price"].head(1)]),
+        line_width=4,
+        color=Category10[3][1],
+    )
+
+    # Plot past data as dots
+    source_past = ColumnDataSource(past_df)
+    past_dots = p.circle(
+        x="time",
+        y="price",
+        size=10,
+        color=Category10[3][0],
+        legend_label="Past Data",
+        source=source_past,
+    )
+    past_line = p.line(
+        x="time",
+        y="price",
+        color=Category10[3][0],
+        legend_label="Past Data",
+        source=source_past,
+        line_width=4,
+    )
+
+    # Add hover tool
+    hover = HoverTool()
+    hover.tooltips = [("time", "@time{%F}"), ("Price", "@price")]
+    hover.formatters = {"@time": "datetime"}
+    p.add_tools(hover)
+
+    # Add labels and legend
+    p.legend.location = "bottom_left"
+    p.legend.click_policy = "hide"
+
+    p.xaxis.formatter = DatetimeTickFormatter(
+        days=["%d/%m/%Y"],
+        months=["%d-%M-%Y"],
+        years=["%d-%M-%Y"],
+    )
+
+    html_str = file_html(p, CDN)
+    return html_str
 
 
 def get_data_explanation(

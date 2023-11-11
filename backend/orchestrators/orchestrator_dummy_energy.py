@@ -17,8 +17,11 @@ class Orchestrator(OrchestratorBase):
         horizon = 8
         handler.update_status_message(f"run energy module, horizon {horizon}")
         handler.update_progress_bar(0)
-        energy_predictions_with_explanation = self.energy_module.execute(
+        energy_predictions_with_explanation, plot = self.energy_module.execute(
             horizon=horizon
         )
         handler.send_text(energy_predictions_with_explanation)
+        asset_tag = handler.send_asset("html", plot)
+        handler.send_text(asset_tag)
+
         handler.finalize()
