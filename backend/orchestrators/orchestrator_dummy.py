@@ -1,5 +1,5 @@
-from .orchestrator_base import OrchestratorBase
-from model_handler import ModelHandler
+from backend.orchestrators.orchestrator_base import OrchestratorBase
+from backend.model_handler.model_handler import ModelHandler
 
 
 class Orchestrator(OrchestratorBase):

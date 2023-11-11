@@ -1,4 +1,4 @@
-from model_handler import ModelHandler
+from backend.orchestrators.model_handler import ModelHandler
 
 
 class OrchestratorBase:

@@ -1,4 +1,5 @@
-
+from typing import Any, List, Optional, Dict, Union
+from typing_extensions import TypedDict, NotRequired, Literal
 
 class ModelHandler:
     def __init__(self):
@@ -20,4 +21,7 @@ class ModelHandler:
         pass
 
     def update_progress_bar(self, progress: Union[int, None]) -> None:
+        pass
+
+    def send_debug_thoughts(self, thought: str) -> None:
         pass
