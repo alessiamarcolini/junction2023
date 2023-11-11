@@ -56,7 +56,12 @@ class Executor:
             self.execution = None
         elif event == "send_text":
             self.user_sio.emit(
-                "text_recieved", {"id": self.execution["id"], "text": data[0]}
+                "text_received", {"id": self.execution["id"], "text": data[0]}
+            )
+        elif event == "send_debug_thought":
+            self.user_sio.emit(
+                "debug_thought_received",
+                {"id": self.execution["id"], "text": data[0]},
             )
         elif event == "send_image":
             print(f"Executor({self.executor_sio.sid}) Recieved image {data[0]}")
