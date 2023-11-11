@@ -23,6 +23,7 @@ def execute(data):
     try:
         orchestrator.execute(handler)
     except Exception as e:
+        print(f"Error occured\n{e}")
         handler.send_text("<asset:error:>")
         handler.finalize()
     finally:
