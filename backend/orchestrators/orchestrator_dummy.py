@@ -30,7 +30,7 @@ class Orchestrator(OrchestratorBase):
         time.sleep(2)
         for i in range(10):
             handler.send_text("Hello world")
-            time.sleep(1)
+            time.sleep(.1)
         time.sleep(2)
         handler.finalize()
 

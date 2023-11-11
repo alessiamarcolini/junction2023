@@ -1,5 +1,3 @@
-from threading import Thread
-
 import eventlet
 import executor_service
 import user_service

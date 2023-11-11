@@ -5,8 +5,10 @@ from executor_service import request_execution
 from socket_wrapper import SocketWrapper
 
 STATIC_FILES = {
-    "/": "../frontend/build/index.html",
-    "/static": "../frontend/build/static",
+    "": "./frontend/dist/index.html",
+    "/": "./frontend/dist/index.html",
+    "/assets": "./frontend/dist/assets",
+    "/vite.svg": "./frontend/dist/vite.svg",
 }
 
 
@@ -24,7 +26,7 @@ def routes(sio):
     pass
 
 
-sio = socketio.Server(cors_allowed_origins="*")
+sio = socketio.Server(cors_allowed_origins="*", async_mode="eventlet")
 app = socketio.WSGIApp(sio, static_files=STATIC_FILES)
 
 routes(sio)

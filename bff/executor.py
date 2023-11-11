@@ -19,8 +19,7 @@ class Executor:
 
             task = None
             try:
-                print(f"Executor({self.executor_sio.sid}) Polling task")
-                task = self.taskQueue.get(timeout=3)
+                task = self.taskQueue.get(timeout=1)
             except:
                 continue
 
