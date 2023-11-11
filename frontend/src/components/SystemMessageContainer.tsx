@@ -96,7 +96,7 @@ export const SystemMessageContainer = ({
           }}
         >
           {message.decision.map((d, idx) => (
-            <div key={idx}>{d}</div>
+            <p key={idx}>{d}</p>
           ))}
         </Modal>
       )}
