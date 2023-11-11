@@ -98,6 +98,7 @@ function App() {
   );
 
   useSocketEvent("finalize", () => {
+    console.log("finsliye")
     setMessageHistory([
       ...messageHistory,
       {

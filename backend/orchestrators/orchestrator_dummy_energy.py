@@ -24,4 +24,5 @@ class Orchestrator(OrchestratorBase):
         asset_tag = handler.send_asset("html", plot)
         handler.send_text(asset_tag)
 
+        time.sleep(1)
         handler.finalize()

@@ -1,6 +1,6 @@
 import uuid
 from typing import Any, List, Union
-
+import time
 from .model_handler import ModelHandler
 
 
@@ -23,6 +23,7 @@ class SocketModelHandler(ModelHandler):
 
     def finalize(self):
         print(f"Finalizing")
+        time.sleep(1)
         self.__sio.emit("finalize")
 
     def messages(self) -> List[str]:
