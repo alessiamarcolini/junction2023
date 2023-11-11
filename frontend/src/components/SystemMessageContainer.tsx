@@ -79,6 +79,12 @@ export const SystemMessageContainer = ({
                     />
                   </div>
                 );
+              case "error":
+                return (
+                  <div key={fragmentIdx} className="w-full px-4 py-12 mx-auto">
+                    <p className="text-red-500">Error occured during generation. Please refresh... </p>
+                  </div>
+                );
             }
           })}
           {children}

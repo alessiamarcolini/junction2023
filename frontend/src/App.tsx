@@ -63,6 +63,14 @@ function App() {
             },
           ];
         }
+        if (tokens[1] === "error") {
+          return [
+            ...assets,
+            {
+              type: "error",
+            }
+          ]
+        }
       }
       if (assets.length === 0 || assets[assets.length - 1].type !== "text") {
         return [...assets, { type: "text", text: word }];
