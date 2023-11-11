@@ -13,43 +13,11 @@ from llama_cpp import Llama
 from langchain.prompts import PromptTemplate
 
 SUMMARY_PROMPT = """<s>[INST]
-You are an assistant EXTRACTing TIME INFORMATION from forecast requests.
-You need to create a valid JSON file with the keys "reasoning" which
-details how you calculated the number of days the prediction is in 
-the future. Take it slow, calculate STEP BY STEP to make sure you are
+You are an assistant SUMMARIZING RESULTS from machine learning models
+to aid busines decision-making. Please PROVIDE A SUMMARY OF 2-3 PARAGRAPHS
+answering the following  Take it slow, calculate STEP BY STEP to make sure you are
 correct. Here are some examples:
 [/INST]
-
-Input: I want to know the price of energy 2 weeks from now.
-Output: {{
-    "reasoning": "The request mentions '2 weeks from now'. Thus the number of days is 2 weeks x 7 days = 14 days.",
-    "days": 14
-}}
-</s>
-
-<s>
-Input: How are steel alloys going to be priced in 1-2 months' time?
-Output:{{
-    "reasoning": "The request mentions `1-2 months time`. I assume a month is 30 days and I take the further point of 2 months. Thus the number of days is 2 months x 30 days = 60 days",
-    "days": 60
-}}
-</s>
-
-<s>
-Input: I'm going to the doctor tomorrow and need to know the energy prices for next month.
-Output:{{
-    "reasoning": "The request mentions `for next month`. I assume a month is 30 days and I take the furthest point of a full month. Thus the number of days is 1 month x 30 days = 30 days",
-    "days": 30
-}}
-</s>
-
-<s>
-Input: I came to work early at 7am and now I need an energy price forecast for the next half week. Can you help with that?
-Output:{{
-    "reasoning": "The request mentions `for the next half week`. A week is 7 days and thus half of a week is 0.5 weeks x 7 days = 3.5 days. Rounding it up gives 4 days",
-    "days": 4
-}}
-</s>
 
 Input: {userPrompt}
 Output: 
