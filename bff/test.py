@@ -1,10 +1,28 @@
 import socketio
 
-sio = socketio.SimpleClient()
+sio = socketio.Client()
+
+
+@sio.on("connect")
+def connect():
+    sio.emit(
+        "execute",
+        [
+            {"owner": "system", "content": "Hello"},
+            {"owner": "user", "content": "World"},
+        ],
+    )
+
+
+
+@sio.on("*")
+def handle_messages(event, *args):
+    print(f"{event} {args}")
+
+    if event == "finalize":
+        sio.disconnect()
+        exit(0)
+
+
 sio.connect("http://localhost:5000")
-
-sio.emit("execute", {"messages": ["Hello", "World"]})
-
-while True:
-    event = sio.receive()
-    print(event)
+sio.wait()
