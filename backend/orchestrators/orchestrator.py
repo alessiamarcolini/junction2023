@@ -28,38 +28,48 @@ class Orchestrator(OrchestratorBase):
         # Orchestration plan goal: "deny" or "explain"
         goal = orchestrationPlan["orchestrationPlan"]["goal"]
 
-        # We have stuff to do
-        if goal == "explain":
-            handler.update_status_message("Preparing forecasts...")
-            models = orchestrationPlan["orchestrationPlan"]["relevantModels"]
-            logging.info(f"Explaining model output using models: {models}")
+        # Deny request (politely)
+        if goal == "deny":
+            handler.update_progress_bar(50)
 
-            # Get timeline for predictions
-            days = TimeModule(
-                modelName="mistral-7B-instruct"
+        handler.update_status_message("Preparing forecasts...")
+        models = orchestrationPlan["orchestrationPlan"]["relevantModels"]
+        logging.info(f"Explaining model output using models: {models}")
+
+        # Get timeline for predictions
+        days = TimeModule(
+            modelName="mistral-7B-instruct"
+        )
+
+        # Convert days to months and round days/months
+        months = np.ceil(days/30)
+        days = np.ceil(days)
+
+        # Call-out to energy module relevant modules
+        moduleResults = {}
+        if "ENERGY PRICE FORECAST MODEL" in models:
+            handler.update_status_message(f"Running energy forecast for {days} days...")
+            logging.info(f"Running energy forecast for {days} days")
+            energyPredictions, energyPlot = EnergyModule().execute(
+                horizon=days
             )
 
-            # Convert days to months and round days/months
-            months = np.ceil(days/30)
-            days = np.ceil(days)
+            moduleResults["energy"] = {
+                "text": energyPredictions,
+                "plot": energyPlot
+            }
+        
+        if "STEEL PRICE FORECAST MODEL" in models:
+            handler.update_status_message(f"Running steel forecast for {months} months...")
+            logging.info(f"Running steel forecast for {months} months")
+            steelPredictions, steelPlot = SteelModule(
+                model_name="Steel"
+            ).execute(horizon=months)
 
-            # Call-out to energy module relevant modules
-            moduleResults = {}
-            if "ENERGY PRICE FORECAST MODEL" in models:
-                handler.update_status_message(f"Running energy forecast for {days} days...")
-                logging.info(f"Running energy forecast for {days} days")
-                energyPredictions, energyPlot = EnergyModule().execute(
-                    horizon=days
-                )
+            moduleResults["steel"] = {
+                "text": steelPredictions,
+                "plot": steelPlot
+            }
+
+        # Generate model summary
             
-            if "STEEL PRICE FORECAST MODEL" in models:
-                handler.update_status_message(f"Running steel forecast for {months} months...")
-                logging.info(f"Running steel forecast for {months} months")
-                steelPredictions, steelPlot = SteelModule(
-                    model_name="Steel"
-                ).execute(horizon=months)
-
-
-
-        # Update progress bar for deny request
-        handler.update_progress_bar(50)
