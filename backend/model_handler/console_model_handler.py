@@ -12,7 +12,7 @@ class ConsoleModelHandler(ModelHandler):
         self.__finalized = False
 
     def send_text(self, text):
-        print(text)
+        logging.info(f"Frontend message received: |{text}|")
 
     def send_asset(self, type, asset)-> str:
         id = str(uuid.uuid4())

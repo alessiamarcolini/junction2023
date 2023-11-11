@@ -158,7 +158,7 @@ class PlannerModule(ModuleBase):
             return {
                 "orchestrationPlan": {
                     "goal": "deny",
-                    "reasoning": "Non-relevant request"
+                    "reasoning": "irrelevant"
                 },
                 "messages": messages,
             }
@@ -217,7 +217,7 @@ class PlannerModule(ModuleBase):
         return {
             "orchestrationPlan": {
                 "goal": "deny",
-                "reasoning": "Not implemented",
+                "reasoning": "no_model",
             },
             "messages": messages,
         }
