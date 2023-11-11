@@ -16,6 +16,6 @@ export type MessageFragment = TextFragment | ImageFragment
 
 export type Message = {
   fragments: MessageFragment[],
-  owner: 'bot' | 'user',
+  owner: 'system' | 'user',
   decision?: string
 }

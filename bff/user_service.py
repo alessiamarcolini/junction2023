@@ -20,6 +20,6 @@ def routes(sio):
     pass
 
 
-sio = socketio.Server()
+sio = socketio.Server(cors_allowed_origins="*")
 app = socketio.WSGIApp(sio, static_files=STATIC_FILES)
 routes(sio)
