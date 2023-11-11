@@ -64,7 +64,9 @@ export const MessageContainer = ({ message }: MessageContainerProps) => {
             setShowModal(false);
           }}
         >
-          <div>{message.decision}</div>
+        {message.decision.map((d, idx) => 
+          <div key={idx}>{d}</div>
+        )}
         </Modal>
       )}
       {showOverlay && (

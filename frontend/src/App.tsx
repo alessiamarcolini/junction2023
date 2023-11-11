@@ -4,7 +4,7 @@ import { DemoMessageContainer } from "./components/DemoMessageContainer";
 import { MessageContainer } from "./components/MessageContainer";
 import { Spinner } from "./components/Spinner";
 import { useSocket, useSocketEvent } from "./hooks/useSocket";
-import { Execution, Request } from "./types";
+import { Execution, Request, TextReceivedEvent } from "./types";
 import { calculateSpinnerMessage, scrollToBottom } from "./utils";
 import { RECOMMENDED_DEMO_MESSAGES } from "./constants";
 import { WrapperContainer } from "./components/WrapperContainer";
@@ -16,6 +16,8 @@ function App() {
   const [executionState, setExecutionState] = useState<Execution | undefined>(
     undefined,
   );
+  const [currentMessage, setCurrentMessage] = useState<string>("");
+  const [decision, setDecision] = useState<string[]>([]);
 
   useEffect(() => scrollToBottom(messagesEnd), [messageHistory]);
 
@@ -27,6 +29,25 @@ function App() {
   useSocketEvent("execution_updated", (execution: Execution) =>
     setExecutionState(execution),
   );
+  useSocketEvent("text_received", (message: TextReceivedEvent) =>
+    // TODO: rework this logic when we have special delimiters for images
+    setCurrentMessage((current) => `${current} ${message.text}`),
+  );
+  useSocketEvent("debug_thought_received", (message: TextReceivedEvent) =>
+    setDecision((current) => [...current, message.text]),
+  );
+  useSocketEvent("finalize", () => {
+    setMessageHistory([
+      ...messageHistory,
+      {
+        owner: "system",
+        fragments: [{ type: "text", text: currentMessage }],
+        decision,
+      },
+    ]);
+    setCurrentMessage("");
+    setDecision([]);
+  });
 
   const demoMessageClickHandler = (message: string) => {
     setMessageHistory([
@@ -38,6 +59,7 @@ function App() {
             text: message,
           },
         ],
+        decision: [],
       },
     ]);
   };
@@ -46,6 +68,7 @@ function App() {
     const data: Message = {
       fragments: [{ type: "text", text: input }],
       owner: "user",
+      decision: [],
     };
     setInput("");
     const newHistory = [...messageHistory, data];
@@ -60,6 +83,7 @@ function App() {
     io.emit("execute", { messages: emitData });
   };
 
+  console.log({ executionState });
   return (
     <WrapperContainer>
       <div className="flex flex-col gap-4 w-full max-w-2xl px-4 bg-secondary-300 rounded-lg m-4 mt-0 overflow-hidden">
