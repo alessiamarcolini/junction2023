@@ -9,16 +9,20 @@ class Orchestrator(OrchestratorBase):
     def __init__(self):
         super().__init__()
 
-        self.energy_module = EnergyModule(model_name="WTF")
+        self.energy_module = EnergyModule()
 
     def execute(self, handler: ModelHandler):
         handler.update_status_message("started")
         time.sleep(2)
-        horizon = 9
+        horizon = 9 # Number of days
         handler.update_status_message(f"run energy module, horizon {horizon}")
         handler.update_progress_bar(0)
-        energy_predictions = self.energy_module.execute(horizon=horizon)
-        handler.send_text(
-            f"Energy prediction for horizon {horizon}: {energy_predictions}"
+        energy_predictions_with_explanation, plot = self.energy_module.execute(
+            horizon=horizon
         )
+        handler.send_text(energy_predictions_with_explanation)
+        asset_tag = handler.send_asset("html", plot)
+        handler.send_text(asset_tag)
+
+        time.sleep(1)
         handler.finalize()

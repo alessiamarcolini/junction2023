@@ -16,3 +16,10 @@ export type TextReceivedEvent = {
   id: string;
   text: string;
 }
+
+
+export type Asset = {
+  id: string,
+  filename: string,
+  type: string
+}
