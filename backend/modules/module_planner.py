@@ -22,30 +22,44 @@ from langchain.schema import StrOutputParser
 DENY_PROMPT = """<s>[INST]
 You are an assistant filtering inputs for further processing.
 IF THE PROBLEM IS RELATED TO THE STEEL INDUSTRY OR ENERGY PRICES in any way,
-you need to pass on the output for further processing. In these cases,
-only generate one word: "PASS". Otherwise, you need to return the
-word "DECLINE" for the request. RETURN ONLY ONE WORD.
+you need to pass on the output for further processing. Please generate a valid
+JSON string with keys "outcome" (DENY or PASS) that signifies if the problem is
+related to the steel industry or not. The other key is "reasoning" where you
+must explain why you think the request is related to the steel industry or energy
+prices. RETURN ONLY THE JSON.
 [\INST]
 
 Here are some examples:
 
 Input: Can you generate some images of cats?
-Output: DECLINE
+Output: {{
+    "outcome": "DENY",
+    "reasoning": "Generating images of cats has nothing to do with the steel industry or energy prices."
+}}
 </s>
 
 <s>
 Input: I want to know the price of steel in 3 months.
-Output: PASS
+Output: {{
+    "outcome": "PASS",
+    "reasoning": "Knowing the prices of steel in 3 months is directly related to the steel industry."
+}}
 </s>
 
 <s>
 Input: How much energy does steel processing consume? Can you forecast factors influencing energy prices in the near future?
-Output: PASS
+Output: {{
+    "outcome": "PASS",
+    "reasoning": "Energy consumed while manufacturing steel is directly asking about the steel industry. Also, forecasting energy prices is also mentioned in the request."
+}}
 </s>
 
 <s>
 Input: Can you help me generate some python code to print to the console?
-Output: DECLINE
+Output: {{
+    "outcome": "DENY",
+    "reasoning": "Generating python code to solve a programming question is not related to the steel industry or energy prices."
+}}
 </s>
 
 Input: {userPrompt}
@@ -64,7 +78,7 @@ up to 12 months into the future.
 
 List ALL models applicable to the problem at hand. The Output
 should include a list of relevant models. Additionally, you must 
-argue in one sentence WHY YOU THINK THE MODELS YOU SELECTED ARE RELEVANT. [\INST]
+argue in one sentence WHY YOU THINK THE MODELS YOU SELECTED ARE (NOT) RELEVANT. [\INST]
 Here are some examples:
 
 Input: I want to know the price of purchasing steel in 6 weeks' time. Can you help me?
@@ -148,21 +162,30 @@ class PlannerModule(ModuleBase):
             responseText = filterResponse['choices'][0]['message']['content']
             logging.info(f"Deny/accept response {i} generated: {responseText}")
 
-            if any(word in responseText.lower() for word in ["pass", "decline"]):
-                logging.info(f"Correct deny/accept response generated")
-                break
-            
-            logging.info(f"Invalid deny/accept response. Retrying ... ({i}/{self.__maxRetries})")
+            try:
+                denyResponse = json.loads(responseText)
+            except json.decoder.JSONDecodeError:
+                logging.warn(f"Accept/deny model generated invalid JSON: {responseText}")
+                continue
+
+            try:
+                # Stop generating when correct classification is achieved
+                VALID_OUTCOMES = ["PASS", "DENY"]
+                if all(word in VALID_OUTCOMES for word in denyResponse["outcome"]):
+                    logging.info(f"Accept/deny model decision invalid. Recommendations: {json.dumps(denyResponse, indent=2)}")
+                    break
+            except Exception as e:
+                logging.info(f"Exception encountered when validating JSON contents: {e}")
 
             if i + 1 == self.__maxRetries:
-                raise RuntimeError("No usable response from LLM model")
+                raise RuntimeError("No usable response from accept/deny LLM model")
         
         # Return: Question not relevant
-        if "decline" in responseText.lower():
+        if denyResponse["outcome"] == "DENY":
             return {
                 "orchestrationPlan": {
                     "goal": "deny",
-                    "reasoning": "Non-relevant request"
+                    "reasoning": denyResponse["reasoning"]
                 },
                 "messages": messages,
             }
@@ -221,7 +244,7 @@ class PlannerModule(ModuleBase):
         return {
             "orchestrationPlan": {
                 "goal": "deny",
-                "reasoning": "Not implemented",
+                "reasoning": modelResponse["reasoning"],
             },
             "messages": messages,
         }
