@@ -14,7 +14,7 @@ class Orchestrator(OrchestratorBase):
     def execute(self, handler: ModelHandler):
         handler.update_status_message("started")
         time.sleep(2)
-        horizon = 7
+        horizon = 9
         handler.update_status_message(f"run energy module, horizon {horizon}")
         handler.update_progress_bar(0)
         energy_predictions = self.energy_module.execute(horizon=horizon)
