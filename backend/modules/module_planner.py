@@ -1,11 +1,16 @@
-from backend.model_handler.model_handler import ModelHandler
-from backend.modules.module_base import ModuleBase
-from llama_cpp import Llama
-import backend.config as cfg
-import logging
-
+# Base packages
 from typing import Any, List, Optional, Dict, Union
 from typing_extensions import TypedDict, NotRequired, Literal
+import logging
+
+# Custom packages
+from backend.model_handler.model_handler import ModelHandler
+from backend.modules.module_base import ModuleBase
+from backend.types.orchestration_types import OrchestrationStep
+import backend.config as cfg
+
+# 3-rd party packages
+from llama_cpp import Llama
 
 FILTER_PROMPT = """
 You are an assistant filtering inputs for further processing.
@@ -83,7 +88,7 @@ class PlannerModule(ModuleBase):
 
         logging.info(f"Initialized planner model {modelName}")
 
-    def execute(self, handler: ModelHandler):
+    def execute(self, handler: ModelHandler) -> List[OrchestrationStep]:
         logging.info("Executing planner function")
         self.__modelHandler = handler
         messages = handler.messages()
@@ -101,16 +106,21 @@ class PlannerModule(ModuleBase):
                 stream=self.stream,
                 temperature=self.temperature,
             )
-            responseText = filterResponse['choices'][0]['message']['content']
+            responseText = filterResponse['choices'][0]['message']['content'].lower()
             logging.info(f"Filter response {i} generated: {responseText}")
 
-            if responseText.lower() in ["accept", "decline"]:
+            if responseText in ["accept", "decline"]:
                 break
             
             logging.info(f"Invalid filtering response. Retrying ... ({i}/{self.__maxRetries})")
         
         # Decline - return plan
+        if responseText == "decline":
+            return [{
+                "role": "summary",
+                "name": "decline",
+                "reason": "Input not related to steel industry"
+            }]
         
+        # Accept - create plan
         
-        # TODO - remove
-        self.__modelHandler.finalize()
