@@ -1,13 +1,19 @@
-import { useEffect, useRef, useState } from "react";
-import { Message, TextFragment } from "./Messages";
+import { useRef, useState } from "react";
+import {
+  HtmlFragment,
+  ImageFragment,
+  Message,
+  MessageFragment,
+  TextFragment,
+} from "./Messages";
 import { DemoMessageContainer } from "./components/DemoMessageContainer";
 import { MessageContainer } from "./components/MessageContainer";
 import { Spinner } from "./components/Spinner";
+import { WrapperContainer } from "./components/WrapperContainer";
+import { RECOMMENDED_DEMO_MESSAGES, STATIC_PATH } from "./constants";
 import { useSocket, useSocketEvent } from "./hooks/useSocket";
 import { Execution, Request, TextReceivedEvent } from "./types";
-import { calculateSpinnerMessage, scrollToBottom } from "./utils";
-import { RECOMMENDED_DEMO_MESSAGES } from "./constants";
-import { WrapperContainer } from "./components/WrapperContainer";
+import { calculateSpinnerMessage } from "./utils";
 
 function App() {
   const [input, setInput] = useState<string>("");
@@ -16,11 +22,15 @@ function App() {
   const [executionState, setExecutionState] = useState<Execution | undefined>(
     undefined,
   );
-  const [currentMessage, setCurrentMessage] = useState<string>("");
+  // const [currentMessage, setCurrentMessage] = useState<string>("");
   const [decision, setDecision] = useState<string[]>([]);
   const [generating, setGenerating] = useState<boolean>(false);
+  const [assets, setAssets] = useState<MessageFragment[]>([]);
 
-  useEffect(() => scrollToBottom(messagesEnd), [messageHistory, executionState, currentMessage]);
+  // useEffect(
+  //   () => scrollToBottom(messagesEnd),
+  //   [messageHistory, executionState, currentMessage],
+  // );
 
   const io = useSocket();
   useSocketEvent("connect", () => console.log("reeeeeeeeee"));
@@ -32,23 +42,73 @@ function App() {
   );
   useSocketEvent("text_received", (message: TextReceivedEvent) =>
     // TODO: rework this logic when we have special delimiters for images
-    setCurrentMessage((current) => `${current} ${message.text}`),
+    {
+      console.log('message recieved', {message})
+      setAssets((assets) => {
+        const regex = "^<asset:.*";
+        const words = message.text.split(" ");
+        const rawFragments : MessageFragment[]= words.map((word) => {
+          if (!word.match(regex)) {
+            return {
+              type: "text",
+              text: word,
+            };
+          }
+          const tokens = word.slice(1, -1).split(":");
+          if (tokens[1] === "image") {
+            const fragment: ImageFragment = {
+              type: "image",
+              src: `${STATIC_PATH}${tokens[2]}`,
+            };
+            return fragment;
+          }
+          const fragment: HtmlFragment = {
+            type: "html",
+            src: `${STATIC_PATH}${tokens[2]}`,
+          };
+          return fragment;
+        });
+
+
+        console.log({words, rawFragments});
+        const newFragments = [...assets, ...rawFragments].reduce<MessageFragment[]>(
+          (acc: MessageFragment[], curr: MessageFragment) => {
+            if (
+              acc.length === 0 ||
+              acc[acc.length - 1].type !== "text" ||
+              curr.type !== "text"
+            ) {
+              return [...acc, curr];
+            }
+            const fragment = {
+             ...acc[acc.length - 1] as TextFragment,
+             text: `${(acc[acc.length - 1] as TextFragment).text} ${curr.text}`
+             }
+            return [...acc.slice(0, -1), fragment];
+          },
+          [],
+        );
+
+        return newFragments;
+      });
+    },
   );
   useSocketEvent("debug_thought_received", (message: TextReceivedEvent) =>
     setDecision((current) => [...current, message.text]),
   );
+
   useSocketEvent("finalize", () => {
     setMessageHistory([
       ...messageHistory,
       {
         owner: "system",
-        fragments: [{ type: "text", text: currentMessage }],
+        fragments: assets,
         decision,
       },
     ]);
-    setCurrentMessage("");
     setDecision([]);
-    setGenerating(false)
+    setAssets([]);
+    setGenerating(false);
   });
 
   const onClickHandler = (message: Message) => {
@@ -102,16 +162,6 @@ function App() {
           {messageHistory.map((message, idx) => (
             <MessageContainer message={message} key={idx} />
           ))}
-          {currentMessage.length > 1 && (
-            <MessageContainer
-              hideDecision
-              message={{
-                fragments: [{ type: "text", text: `${currentMessage} ...` }],
-                owner: "system",
-                decision: [],
-              }}
-            />
-          )}
           {executionState && executionState.progress != null && (
             <Spinner
               message={calculateSpinnerMessage(executionState.progress)}

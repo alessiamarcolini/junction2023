@@ -1,7 +1,7 @@
 import { Sender } from "./types";
 
 export interface MessageBase {
-  type: "text" | "image";
+  type: "text" | "image" | "html";
 }
 
 export interface TextFragment extends MessageBase {
@@ -14,7 +14,12 @@ export interface ImageFragment extends MessageBase {
   src: string;
 }
 
-export type MessageFragment = TextFragment | ImageFragment;
+export interface HtmlFragment extends MessageBase {
+  type: "html";
+  src: string;
+}
+
+export type MessageFragment = TextFragment | ImageFragment | HtmlFragment;
 
 export type Message = {
   fragments: MessageFragment[];
