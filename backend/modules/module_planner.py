@@ -35,45 +35,51 @@ Input: Can you help me generate some python code to print to the
 console?
 Output: DECLINE
 
-Input: 
-"""
-
-BREAK_DOWN_PROMPT = """
-You are an assistant breaking down complex problems into easy-to-solve chunks.
-"""
+Input: """
 
 MODEL_PROMPT = """
-You have the following trusted models
-at your disposal:
+You are an assistant who needs to decide whether it 
+makes sense to apply a set of pre-trained machine learning
+models to the problem. These models are:
 
-energy_price_forecast model:
-- parameters: 
-    - months: float
+ENERGY PRICE FORECAST MODEL: Predicts energy prices up to
+6 months into the future.
 
-steel_price_forecast model:
-- parameters: 
-    - months: float
-    - alloy: string
+STEEL PRICE FORECAST MODEL: Predicts steel alloy prices
+up to 6 months into the future.
 
-Please use the above models to break down the problem given at 
-the end. Please respond in json format with the model name and
-model parameters and include your reasoning. If these models cannot
-solve the problem, please say "I cannot solve the problem".
+List ALL models applicable SEPARATED BY COMMAS. If NO MODELS
+ARE APPLICABLE, say "NONE". Here are some examples:
 
-Here is one example to help:
-Input: What is the expected development of stainless steel 
-market pricing for 10B general steel alloy in two weeks?
-Output:
-[
-    {"modelName": "steel_price_forecast",
-    "parameters": {
-        "months": 0.5,
-        "alloy": "10B general steel"
-        }
-    }
-]
+Input: I want to know the price of purchasing steel in 6 weeks' time. Can you help me?
+Output: STEEL PRICE FORECAST MODEL
+
+Input: Do you know how much energy it takes to produce steel?
+Output: NONE
+
+Input: I want to know the energy costs for manufacturing steel in 6 weeks' time.
+Can you help me?
+Output: ENERGY PRICE FORECAST MODEL
+
+Input: I want to forecast the profit margin for producing steel for the next 2 months.
+Can you help me come up with an estimate?
+Output: ENERGY PRICE FORECAST MODEL, STEEL PRICE FORECAST MODEL
+
+Input: I want to know the latest news about the steel industry. Can you summarize them
+for me please?
+Output: NONE
+
+Input: """
+
+BREAKDOWN_PROMPT = """
+You are an assistant and your task is to break down tasks into
+smaller bits. Your output should contain ONLY THE SUB-TASKS with 
+each sub-task starting on a NEW LINE.
+
+Here are some examples to help:
+
+
 """
-
 
 class PlannerModule(ModuleBase):
     def __init__(self, 
@@ -100,6 +106,9 @@ class PlannerModule(ModuleBase):
 
         # Task 1 - do we need to answer this message?
         for i in range(maxRetries):
+            # TODO: Remove - testing
+            responseText = "accept"
+            break
             filterResponse = self.__model.create_chat_completion(
                 messages,
                 max_tokens=16,
@@ -123,4 +132,32 @@ class PlannerModule(ModuleBase):
             }]
         
         # Accept - create plan
+        messages = handler.messages()
+        logging.info(f"Deciding on models to use for prompt: {messages[-1]["content"]}")
+        messages[-1]["content"] = MODEL_PROMPT + messages[-1]["content"] + "\n Output:"
+
+        # Add custom prompt to message
+        for i in range(maxRetries):
+            filterResponse = self.__model.create_chat_completion(
+                messages,
+                max_tokens=128,
+                stream=self.stream,
+                temperature=self.temperature,
+            )
+            responseText = filterResponse['choices'][0]['message']['content'].lower()
+            logging.info(f"Filter response {i} generated: {responseText}")
+
+            # Stop generating when correct classification is achieved
+            acceptableResponses = ["forecast model", "none"]
+            if any(word in responseText for word in acceptableResponses):
+                break
         
+        # Get models
+        modelNames = ["energy price forecast model", "steel price forecast model"]
+        models = [word in responseText for word in modelNames]
+
+        # Break down problem
+
+        # Create orchestration plan
+
+        # Return orchestration plan
