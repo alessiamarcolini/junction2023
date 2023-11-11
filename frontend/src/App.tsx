@@ -1,19 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  HtmlFragment,
-  ImageFragment,
   Message,
   MessageFragment,
-  TextFragment,
+  TextFragment
 } from "./Messages";
 import DemoDiscussions from "./components/DemoDiscussions";
+import InProgressContainer from "./components/InProgressContainer";
 import { MessageContainer } from "./components/MessageContainer";
 import { WrapperContainer } from "./components/WrapperContainer";
 import { STATIC_PATH } from "./constants";
 import { useSocket, useSocketEvent } from "./hooks/useSocket";
 import { Execution, Request, TextReceivedEvent } from "./types";
 import { scrollToBottom } from "./utils";
-import InProgressContainer from "./components/InProgressContainer";
 
 function App() {
   const [input, setInput] = useState<string>("");
