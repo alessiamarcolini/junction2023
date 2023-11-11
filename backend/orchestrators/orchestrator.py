@@ -25,7 +25,7 @@ class Orchestrator(OrchestratorBase):
             models = orchestrationPlan["orchestrationPlan"]["relevantModels"]
             logging.info(f"Explaining model output using models: {models}")
 
-            # Get model parameters required
+            # Get timeline for prediction
         
         # Update progress bar for deny request
         handler.update_progress_bar(50)
