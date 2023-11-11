@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   HtmlFragment,
   ImageFragment,
@@ -13,7 +13,8 @@ import { WrapperContainer } from "./components/WrapperContainer";
 import { RECOMMENDED_DEMO_MESSAGES, STATIC_PATH } from "./constants";
 import { useSocket, useSocketEvent } from "./hooks/useSocket";
 import { Execution, Request, TextReceivedEvent } from "./types";
-import { calculateSpinnerMessage } from "./utils";
+import { calculateSpinnerMessage, scrollToBottom } from "./utils";
+import { SystemMessageContainer } from "./components/SystemMessageContainer";
 
 function App() {
   const [input, setInput] = useState<string>("");
@@ -22,15 +23,14 @@ function App() {
   const [executionState, setExecutionState] = useState<Execution | undefined>(
     undefined,
   );
-  // const [currentMessage, setCurrentMessage] = useState<string>("");
   const [decision, setDecision] = useState<string[]>([]);
   const [generating, setGenerating] = useState<boolean>(false);
   const [assets, setAssets] = useState<MessageFragment[]>([]);
 
-  // useEffect(
-  //   () => scrollToBottom(messagesEnd),
-  //   [messageHistory, executionState, currentMessage],
-  // );
+  useEffect(
+    () => scrollToBottom(messagesEnd),
+    [messageHistory, executionState],
+  );
 
   const io = useSocket();
   useSocketEvent("connect", () => console.log("reeeeeeeeee"));
@@ -40,65 +40,57 @@ function App() {
   useSocketEvent("execution_updated", (execution: Execution) =>
     setExecutionState(execution),
   );
-  useSocketEvent("text_received", (message: TextReceivedEvent) =>
-    // TODO: rework this logic when we have special delimiters for images
-    {
-      console.log('message recieved', {message})
-      setAssets((assets) => {
-        const regex = "^<asset:.*";
-        const words = message.text.split(" ");
-        const rawFragments : MessageFragment[]= words.map((word) => {
-          if (!word.match(regex)) {
-            return {
-              type: "text",
-              text: word,
-            };
-          }
-          const tokens = word.slice(1, -1).split(":");
-          if (tokens[1] === "image") {
-            const fragment: ImageFragment = {
-              type: "image",
-              src: `${STATIC_PATH}${tokens[2]}`,
-            };
-            return fragment;
-          }
-          const fragment: HtmlFragment = {
-            type: "html",
+  useSocketEvent("text_received", (message: TextReceivedEvent) => {
+    setAssets((assets) => {
+      const regex = "^<asset:.*";
+      const words = message.text.split(" ");
+      const rawFragments: MessageFragment[] = words.map((word) => {
+        if (!word.match(regex)) {
+          return {
+            type: "text",
+            text: word,
+          };
+        }
+        const tokens = word.slice(1, -1).split(":");
+        if (tokens[1] === "image") {
+          const fragment: ImageFragment = {
+            type: "image",
             src: `${STATIC_PATH}${tokens[2]}`,
           };
           return fragment;
-        });
-
-
-        console.log({words, rawFragments});
-        const newFragments = [...assets, ...rawFragments].reduce<MessageFragment[]>(
-          (acc: MessageFragment[], curr: MessageFragment) => {
-            if (
-              acc.length === 0 ||
-              acc[acc.length - 1].type !== "text" ||
-              curr.type !== "text"
-            ) {
-              return [...acc, curr];
-            }
-            const fragment = {
-             ...acc[acc.length - 1] as TextFragment,
-             text: `${(acc[acc.length - 1] as TextFragment).text} ${curr.text}`
-             }
-            return [...acc.slice(0, -1), fragment];
-          },
-          [],
-        );
-
-        return newFragments;
+        }
+        const fragment: HtmlFragment = {
+          type: "html",
+          src: `${STATIC_PATH}${tokens[2]}`,
+        };
+        return fragment;
       });
-    },
-  );
+
+      const newFragments = [...assets, ...rawFragments].reduce<
+        MessageFragment[]
+      >((acc: MessageFragment[], curr: MessageFragment) => {
+        if (
+          acc.length === 0 ||
+          acc[acc.length - 1].type !== "text" ||
+          curr.type !== "text"
+        ) {
+          return [...acc, curr];
+        }
+        const fragment = {
+          ...(acc[acc.length - 1] as TextFragment),
+          text: `${(acc[acc.length - 1] as TextFragment).text} ${curr.text}`,
+        };
+        return [...acc.slice(0, -1), fragment];
+      }, []);
+
+      return newFragments;
+    });
+  });
   useSocketEvent("debug_thought_received", (message: TextReceivedEvent) =>
     setDecision((current) => [...current, message.text]),
   );
 
   useSocketEvent("finalize", () => {
-    console.log("finsliye")
     setMessageHistory([
       ...messageHistory,
       {
@@ -148,9 +140,40 @@ function App() {
         <div className="bg-secondary-100 flex flex-col w-full h-full rounded-lg overflow-scroll">
           {messageHistory.length === 0 && (
             <>
-              <div className="text-center w-full p-4">
-                Hello there, how can I help you?
-              </div>
+              <SystemMessageContainer
+                hideDecision
+                message={{
+                  fragments: [
+                    {
+                      type: "text",
+                      text: "Hello there!",
+                    },
+                    {
+                      type: "text",
+                      text: "Welcome to the EcoGen chatbot service! How can I help you today?",
+                    },
+                    {
+                      type: "text",
+                      text: "You might send your own questions or use one of our sample questions below.",
+                    },
+                  ],
+                  decision: [],
+                  owner: "system",
+                }}
+              />
+              <SystemMessageContainer
+                hideDecision
+                message={{
+                  fragments: [
+                    {
+                      type: "text",
+                      text: "Please keep in mind that for this demo I am only capable of answering questions regarding energy prices or steel price predictions.",
+                    },
+                  ],
+                  decision: [],
+                  owner: "system",
+                }}
+              />
               {RECOMMENDED_DEMO_MESSAGES.map((demoMsg, idx) => (
                 <DemoMessageContainer
                   key={idx}
