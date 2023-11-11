@@ -3,7 +3,9 @@ import sys
 import socketio
 from model_handler.socket_model_handler import SocketModelHandler
 
-module_name = sys.argv[1]
+module_name = sys.argv[1] if len(sys.argv) > 1 else "orchestrators.orchestrator_dummy"
+bff_url = sys.argv[2] if len(sys.argv) > 2 else "http://localhost:5001"
+
 module_import = __import__(module_name, fromlist=["Orchestrator"])
 
 print("Loading orchestrator")
@@ -33,6 +35,6 @@ def disconnect():
     print("Disconnected from executor service")
 
 
-sio.connect("http://localhost:5001")
+sio.connect(bff_url)
 # sio.connect("https://ecogen-botnet.apisc.host/")
 sio.wait()
