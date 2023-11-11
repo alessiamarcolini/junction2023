@@ -9,7 +9,11 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_absolute_error
-from sklearn.model_selection import RandomizedSearchCV, train_test_split
+from sklearn.model_selection import (
+    RandomizedSearchCV,
+    TimeSeriesSplit,
+    train_test_split,
+)
 from sklearn.preprocessing import OrdinalEncoder
 
 
@@ -24,18 +28,24 @@ def season_from_month(month):
         return "autumn"
 
 
-def lag_column(df, column, lags=list[int]):
+def lag_column(df, column, horizon: int, lags=list[int]):
     for lag in lags:
-        new_column_name = column + "_lag" + str(lag)
-        df[new_column_name] = df[column].shift(lag * 24)
+        delay = lag + horizon
+        new_column_name = column + "_lag" + str(delay)
+        df[new_column_name] = df[column].shift(delay * 24)
     return df
 
 
 def preprocess_data(
-    data: pd.DataFrame, lags: list[int] | None = None, target: str = "price_actual"
+    data: pd.DataFrame,
+    horizon: int | None = None,
+    lags: list[int] | None = None,
+    target: str = "price_actual",
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, list[str]]:
     # Rename columns by replacing all - or blank space with _
     data.columns = data.columns.str.replace(" ", "_").str.replace("-", "_")
+
+    data.sort_index(inplace=True)
 
     # Make the index DT
     data.index = pd.to_datetime(data.index, utc=True)
@@ -60,16 +70,16 @@ def preprocess_data(
     # Create column in dataframe that inputs the season based on the conditions created above
     data["season"] = data.apply(lambda x: season_from_month(x.name.month), axis=1)
 
-    if lags:
+    if lags and horizon:
         for column in data.columns:
-            data = lag_column(data, column, lags=lags)
+            data = lag_column(data, column, horizon=horizon, lags=lags)
+            if column != target and column != "season":
+                data.drop(columns=column, inplace=True)
 
     y, X = data[target], data.drop(columns=target)
     X_train, X_val, y_train, y_val = train_test_split(
-        X, y, test_size=0.2, random_state=42
+        X, y, test_size=0.2, random_state=42, shuffle=False
     )
-
-    print("finished preprocessing")
 
     features_names = X_train.columns
     ordinal_encoder = OrdinalEncoder()
@@ -79,19 +89,23 @@ def preprocess_data(
 
     if lags:
         for lag in lags:
-            ordinal_encoder = ordinal_encoder.fit(X_train[[f"season_lag{lag}"]])
-            X_train[f"season_lag{lag}"] = ordinal_encoder.transform(
-                X_train[[f"season_lag{lag}"]]
+            delay = lag + horizon
+            ordinal_encoder = ordinal_encoder.fit(X_train[[f"season_lag{delay}"]])
+            X_train[f"season_lag{delay}"] = ordinal_encoder.transform(
+                X_train[[f"season_lag{delay}"]]
             )
-            X_val[f"season_lag{lag}"] = ordinal_encoder.transform(
-                X_val[[f"season_lag{lag}"]]
+            X_val[f"season_lag{delay}"] = ordinal_encoder.transform(
+                X_val[[f"season_lag{delay}"]]
             )
+            # X_train.drop(columns=[f"season"], inplace=True)
+            # X_val.drop(columns=[f"season"], inplace=True)
 
     simp = SimpleImputer(strategy="mean")
+    # simp.set_output(transform="pandas")
     simp = simp.fit(X_train)
     X_train = simp.transform(X_train)
     X_val = simp.transform(X_val)
-
+    print("finished preprocessing")
     return X_train, X_val, y_train, y_val, features_names
 
 
@@ -128,18 +142,27 @@ def train_model(
             "max_depth": [20],
         }
 
+    tscv = TimeSeriesSplit(n_splits=2)
+
     model_rs_rfr = RandomizedSearchCV(
-        model_rfr, param_distributions=params, n_iter=20, n_jobs=-1
+        model_rfr,
+        param_distributions=params,
+        n_iter=20,
+        n_jobs=-1,
+        random_state=42,
+        cv=tscv,
     )
 
     model_rs_rfr.fit(X_train, y_train)
+
+    print("Best params: ", model_rs_rfr.best_params_)
 
     check_metrics(model_rs_rfr, X_train, X_val, y_train, y_val)
 
     return model_rs_rfr
 
 
-def plot_feature_importances(model, features_names, lags: list[int] | None = None):
+def plot_feature_importances(model, features_names, horizon: int | None = None):
     feature_importances = model.feature_importances_
 
     # Sort the features based on their importance
@@ -158,17 +181,24 @@ def plot_feature_importances(model, features_names, lags: list[int] | None = Non
     plt.ylabel("Feature")
     plt.title("Random Forest Regressor - Feature Importances (top 10)")
 
-    lag = "_".join([str(l) for l in lags]) if lags else "no_lag"
-    plt.savefig(f"feature_importances_lag={lag}.png", bbox_inches="tight")
+    plt.savefig(f"feature_importances_horizon={horizon}.png", bbox_inches="tight")
 
 
-def save_model(model, features_names, lags: list[int] | None = None):
-    lag = "_".join([str(l) for l in lags]) if lags else "no_lag"
+def save_model(model, features_names, horizon: int | None = None):
     Path("models").mkdir(parents=True, exist_ok=True)
-    with open(f"models/energy_model_lag={lag}.pkl", "wb") as f:
+    with open(f"models/energy_model_horizon={horizon}.pkl", "wb") as f:
         pickle.dump(model, f)
-    with open(f"models/energy_features_names_lag={lag}.pkl", "wb") as f:
+    with open(f"models/energy_features_names_horizon={horizon}.pkl", "wb") as f:
         pickle.dump(features_names, f)
+
+
+def predict(model, data, horizon: int | None = None, lags: list[int] | None = None):
+    X_train, X_val, y_train, y_val, features_names = preprocess_data(
+        data, horizon=horizon, lags=[l - 1 for l in lags]
+    )
+    data_concat = np.concatenate([X_train, X_val])
+    features = data_concat[-1, :].reshape(1, -1)
+    return model.predict(features)
 
 
 if __name__ == "__main__":
@@ -178,11 +208,17 @@ if __name__ == "__main__":
         index_col="time",
     )
 
-    lags = [3, 4, 5]
-    X_train, X_val, y_train, y_val, features_names = preprocess_data(data, lags=lags)
+    horizon = 7
+    lags = [1, 2, 3]
+    X_train, X_val, y_train, y_val, features_names = preprocess_data(
+        data, horizon=horizon, lags=lags
+    )
 
     model = train_model(X_train, y_train, X_val, y_val, mode="random_search")
 
-    plot_feature_importances(model.best_estimator_, features_names, lags=lags)
+    plot_feature_importances(model.best_estimator_, features_names, horizon=horizon)
 
-    save_model(model.best_estimator_, features_names, lags=lags)
+    save_model(model.best_estimator_, features_names, horizon=horizon)
+
+    predicted_value = predict(model, data=data, horizon=horizon, lags=lags)
+    print(predicted_value)
