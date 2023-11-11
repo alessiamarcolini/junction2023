@@ -9,6 +9,7 @@ class SocketModelHandler(ModelHandler):
         super().__init__()
         self.__execution = execuiton
         self.__sio = sio
+        self.is_finalized = False
 
     def send_text(self, text):
         print(f"Sending text {text}")
@@ -25,6 +26,7 @@ class SocketModelHandler(ModelHandler):
         print(f"Finalizing")
         time.sleep(1)
         self.__sio.emit("finalize")
+        self.is_finalized = True
 
     def messages(self) -> List[str]:
         return self.__execution["request"]["messages"]
