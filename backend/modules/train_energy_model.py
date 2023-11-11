@@ -1,12 +1,14 @@
 # %%
 import pickle
 import warnings
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from dateutil.relativedelta import relativedelta
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_absolute_error
@@ -34,7 +36,7 @@ def _season_from_month(month):
 def _lag_column(df, column, horizon: int, lags=list[int]):
     for lag in lags:
         delay = lag + horizon
-        new_column_name = column + "_lag" + str(delay)
+        new_column_name = column + "_t-" + str(lag)
         df[new_column_name] = df[column].shift(delay * 24)
     return df
 
@@ -92,13 +94,12 @@ def _preprocess_data(
 
     if lags:
         for lag in lags:
-            delay = lag + horizon
-            ordinal_encoder = ordinal_encoder.fit(X_train[[f"season_lag{delay}"]])
-            X_train[f"season_lag{delay}"] = ordinal_encoder.transform(
-                X_train[[f"season_lag{delay}"]]
+            ordinal_encoder = ordinal_encoder.fit(X_train[[f"season_t-{lag}"]])
+            X_train[f"season_t-{lag}"] = ordinal_encoder.transform(
+                X_train[[f"season_t-{lag}"]]
             )
-            X_val[f"season_lag{delay}"] = ordinal_encoder.transform(
-                X_val[[f"season_lag{delay}"]]
+            X_val[f"season_t-{lag}"] = ordinal_encoder.transform(
+                X_val[[f"season_t-{lag}"]]
             )
             # X_train.drop(columns=[f"season"], inplace=True)
             # X_val.drop(columns=[f"season"], inplace=True)
@@ -185,11 +186,11 @@ def _plot_feature_importances(model, features_names, horizon: int | None = None)
     plt.savefig(f"feature_importances_horizon={horizon}.png", bbox_inches="tight")
 
 
-def _save_model(model, features_names, horizon: int | None = None):
+def _save_model(model, features_names, last_date: str, horizon: int | None = None):
     Path("models/energy").mkdir(parents=True, exist_ok=True)
-    with open(f"models/energy/model_horizon={horizon}.pkl", "wb") as f:
+    with open(f"models/energy/energy_{last_date}_{horizon}.pkl", "wb") as f:
         pickle.dump(model, f)
-    with open(f"models/energy/features_names_horizon={horizon}.pkl", "wb") as f:
+    with open(f"models/energy/feature_names_horizon={horizon}.pkl", "wb") as f:
         pickle.dump(features_names, f)
 
 
@@ -219,6 +220,7 @@ def train(
         parse_dates=["time"],
         index_col="time",
     )
+    last_date = data.index[-1].strftime("%Y-%m-%d")
     lags = [1, 2, 3]
     X_train, X_val, y_train, y_val, features_names = _preprocess_data(
         data, horizon=horizon, lags=lags
@@ -228,9 +230,120 @@ def train(
 
     # _plot_feature_importances(model.best_estimator_, features_names, horizon=horizon)
 
-    _save_model(model.best_estimator_, features_names, horizon=horizon)
+    _save_model(
+        model.best_estimator_, features_names, last_date=last_date, horizon=horizon
+    )
     _save_data_for_predictions(data, horizon=horizon, lags=lags)
-    return model
+    return model.best_estimator_
+
+
+def _calculate_raw_feature_importances(model, features_names, top_k_features=3):
+    feature_importances = model.feature_importances_
+
+    sorted_idx = np.argsort(feature_importances)[::-1]
+    top_feature_importances = feature_importances[sorted_idx]
+    top_features_names = features_names[sorted_idx]
+
+    only_top_per_category = {}
+    counter = 0
+    for feature_name, feature_importance in zip(
+        top_features_names, top_feature_importances
+    ):
+        category = "_".join(feature_name.split("_")[:-1])
+        if category not in only_top_per_category:
+            only_top_per_category[category] = (feature_name, feature_importance)
+            counter += 1
+        if counter == top_k_features:
+            break
+
+    return only_top_per_category
+
+
+def _zip_string(arr1, arr2):
+    return (
+        "\n".join([f"{arr1[i]}: {round(arr2[i],6)}" for i in range(len(arr1))]) + "\n"
+    )
+
+
+def _generate_upcoming_days(start_date, n):
+    start_date = datetime.strptime(start_date, "%Y-%m-%d")
+    upcoming_days = []
+
+    for i in range(n):
+        next_day = start_date + relativedelta(days=1)
+        upcoming_days.append(next_day.strftime("%Y-%m-%d"))
+        start_date = next_day
+
+    return upcoming_days
+
+
+def _formulate_explanation_string(
+    feature_importances: dict[str, tuple[str, float]],
+    predictions: np.ndarray,
+    horizon: int,
+    last_date: str,
+    latest_horizon_target_values: np.array,
+) -> str:
+    data_explanation = ""
+    data_explanation += (
+        f"The model made the following predictions for the next {horizon} days:\n"
+    )
+    predicted_days = _generate_upcoming_days(last_date, horizon)
+    data_explanation += _zip_string(predicted_days, predictions)
+
+    data_explanation += f"The previous {horizon} days had the following values:\n"
+
+    latest_horizon_target_values = latest_horizon_target_values.reset_index()
+    latest_horizon_target_values["time"] = latest_horizon_target_values[
+        "time"
+    ].dt.strftime("%Y-%m-%d")
+
+    data_explanation += _zip_string(
+        latest_horizon_target_values["time"],
+        latest_horizon_target_values["price actual"],
+    )
+
+    data_explanation += (
+        "The model used the following features with the respective importances:\n"
+    )
+    feat_names = [name for name, _ in feature_importances.values()]
+    feat_importance = [importance for _, importance in feature_importances.values()]
+    data_explanation += _zip_string(feat_names, feat_importance)
+
+    # TODO: this will not report the correct features if the model is trained with a
+    # different horizon and the importances change
+
+    data_explanation += (
+        "where, \n- the feature 'price_actual_t-X' "
+        "means the actual price from X days before.\n"
+        "- the feature 'generation_fossil_hard_coal' represents the coal generation in MW,\n"
+        "- the feature 'generation_fossil_brown_coal/lignite' represents the coal/lignite generation in MW.\n"
+    )
+
+    return data_explanation
+
+
+def get_data_explanation(
+    model,
+    predictions: np.ndarray,
+    features_names,
+    horizon: int,
+    last_date: str,
+    latest_horizon_target_values: np.array,
+    top_k_features=3,
+):
+    feature_importances = _calculate_raw_feature_importances(
+        model, features_names, top_k_features=top_k_features
+    )
+    data_explanation = _formulate_explanation_string(
+        feature_importances,
+        predictions,
+        horizon,
+        last_date,
+        latest_horizon_target_values,
+    )
+
+    return data_explanation
 
 
 if __name__ == "__main__":
