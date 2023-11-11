@@ -3,16 +3,16 @@ import logging
 import copy
 from typing import Any, List, Optional, Dict, Union
 from typing_extensions import TypedDict, NotRequired, Literal
+import json
 
 # Own packages
 from model_handler.model_handler import ModelHandler
 from .module_base import ModuleBase
 import config as cfg
-from custom_types.orchestration_types import ExecutionReturn
+from custom_types.orchestration_types import ExecutionReturn, OrhestrationPlan
 
 # 3rd party packages
 from llama_cpp import Llama
-from langchain.llms import LlamaCpp
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain.callbacks.manager import CallbackManager
@@ -68,42 +68,42 @@ argue in one sentence WHY YOU THINK THE MODELS YOU SELECTED ARE RELEVANT. [\INST
 Here are some examples:
 
 Input: I want to know the price of purchasing steel in 6 weeks' time. Can you help me?
-Output: {
-    models : [STEEL PRICE FORECAST MODEL],
-    reasoning: Steel price directly impacts the purchase price.
-}
+Output: {{
+    "models" : ["STEEL PRICE FORECAST MODEL"],
+    "reasoning": "Steel price directly impacts the purchase price."
+}}
 </s>
 
 <s>
 Input: Do you know how much energy it takes to produce steel?
-Output: {
-    models : [],
-    reasoning: The amount of energy required cannot be predicted by a price forecast model.
-}
+Output: {{
+    "models" : [],
+    "reasoning": "The amount of energy required cannot be predicted by a price forecast model."
+}}
 </s>
 
 <s>
 Input: I want to know the energy costs for manufacturing steel in 6 weeks' time. Can you help me?
-Output: {
-    models : [ENERGY PRICE FORECAST MODEL],
-    reasoning: The energy price forecasting model directly predicts future energy costs.
-}
+Output: {{
+    "models" : ["ENERGY PRICE FORECAST MODEL"],
+    "reasoning": "The energy price forecasting model directly predicts future energy costs."
+}}
 </s>
 
 <s>
 Input: I want to forecast the profit margin for producing steel for the next 2 months. Can you help me come up with an estimate?
-Output: {
-    models : [ENERGY PRICE FORECAST MODEL, STEEL PRICE FORECAST MODEL],
-    reasoning: To calculate the profit, you need both a steel price forecast (revenue) and an energy price forecast (cost).
-}
+Output: {{
+    "models" : ["ENERGY PRICE FORECAST MODEL", "STEEL PRICE FORECAST MODEL"],
+    "reasoning": "To calculate the profit, you need both a steel price forecast (revenue) and an energy price forecast (cost)."
+}}
 </s>
 
 <s>
 Input: I want to know the latest news about the steel industry. Can you summarize them for me please?
-Output: {
-    models : [],
-    reasoning: The forecasting models cannot be used to predict the news, only prices.
-}
+Output: {{
+    "models" : [],
+    "reasoning": "The forecasting models cannot be used to predict the news, only prices."
+}}
 </s>
 
 Input: {userPrompt}
@@ -113,45 +113,42 @@ class PlannerModule(ModuleBase):
     def __init__(self, 
         modelName: str = "mistral-7B-instruct"):
         super().__init__()
-        self.__callbackManager = CallbackManager([StreamingStdOutCallbackHandler()])
         self.maxOutputTokens = 2048
         self.temperature = 0.2
         self.top_p = 50
         self.n_gpu_layers = 40
         self.n_batch = 512
         self.modelName = modelName
+        self.stream = False
+        self.__maxRetries = 3
+        self.__model = Llama(model_path=cfg.models[modelName], n_gpu_layers=128, n_ctx=self.maxOutputTokens)
 
         logging.info(f"Initialized planner model {modelName}")
 
     def execute(self, handler: ModelHandler) -> ExecutionReturn:
         logging.info("Executing planner function")
         self.__modelHandler = handler
-        messages = copy.deepcopy(handler.messages())
-
-        # Add custom prompt to beginning of
-        # last message
-        logging.info(f"Latest message: {messages[-1]['content']}")
+        messages = handler.messages()
+        tempMessages = copy.deepcopy(messages)
 
         # Get latest prompt + respond
         denyPrompt = PromptTemplate(template=DENY_PROMPT, input_variables=["userPrompt"])
-        llm = LlamaCpp(
-            model_path=cfg.models[self.modelName],
-            temperature=self.temperature,
-            max_tokens=self.maxOutputTokens,
-            top_p=self.top_p,
-            callback_manager=self.__callbackManager,
-            n_gpu_layers=self.n_gpu_layers,
-            n_batch=self.n_batch,
-            verbose=True,  # Verbose is required to pass to the callback manager
-        )
-        chain = LLMChain(prompt=denyPrompt, llm=llm)
+        denyPrompt = denyPrompt.format(userPrompt=messages[-1]["content"])
+        logging.info(f"Prompting model with: {denyPrompt}")
+        tempMessages[-1]["content"] = denyPrompt
 
         # Task 1 - do we need to answer this message?
         for i in range(self.__maxRetries):
-            response = chain.run(userPrompt=messages[-1]['content'])
-            logging.info(f"Deny/accept response {i} generated: {response}")
+            filterResponse = self.__model.create_chat_completion(
+                tempMessages,
+                max_tokens=128,
+                stream=self.stream,
+                temperature=self.temperature,
+            )
+            responseText = filterResponse['choices'][0]['message']['content']
+            logging.info(f"Deny/accept response {i} generated: {responseText}")
 
-            if any(word in response.lower() for word in ["pass", "decline"]):
+            if any(word in responseText.lower() for word in ["pass", "decline"]):
                 logging.info(f"Correct deny/accept response generated")
                 break
             
@@ -161,17 +158,11 @@ class PlannerModule(ModuleBase):
                 raise RuntimeError("No usable response from LLM model")
         
         # Return: Question not relevant
-        if "decline" in response.lower():
-            newMessage = {
-                "role": "system",
-                "content": response,
-            }
-            messages.append(newMessage)
-
+        if "decline" in responseText.lower():
             return {
                 "orchestrationPlan": {
                     "goal": "deny",
-                    "reasoning": "Not relevant request"
+                    "reasoning": "Non-relevant request"
                 },
                 "messages": messages,
             }
@@ -180,44 +171,57 @@ class PlannerModule(ModuleBase):
         # Task 2 - what models to use?
         logging.info("Executing model selector prompt")
         self.__modelHandler = handler
-        messages = copy.deepcopy(handler.messages())
+        tempMessages = copy.deepcopy(messages)
 
-        # Add custom prompt to beginning of
-        # last message
-        logging.info(f"Latest message: {messages[-1]['content']}")
-
-        # Get latest prompt + respond
+        # Create new prompt
         modelPrompt = PromptTemplate(template=MODEL_PROMPT, input_variables=["userPrompt"])
-        llm = LlamaCpp(
-            model_path=cfg.models[self.modelName],
-            temperature=self.temperature,
-            max_tokens=self.maxOutputTokens,
-            top_p=self.top_p,
-            callback_manager=self.__callbackManager,
-            n_gpu_layers=self.n_gpu_layers,
-            n_batch=self.n_batch,
-            grammar_path=cfg.grammar["json"],
-            verbose=True,  # Verbose is required to pass to the callback manager
-        )
-        chain = LLMChain(prompt=modelPrompt, llm=llm)
+        modelPrompt = modelPrompt.format(userPrompt=messages[-1]["content"])
+        logging.info(f"Prompting model with: {modelPrompt}")
+        tempMessages[-1]["content"] = modelPrompt
 
         for i in range(self.__maxRetries):
-            response = chain.run(userPrompt=messages[-1]['content'])
-            logging.info(f"Model filter response {i} generated: {response}")
-
-            try:
-                modelResponse = json.loads(response)
-            except ValueError:
-                logging.warn("Couldn't convert model recommendation to JSON. Retrying...")
-                logging.info(f"Tried to convert: {response}")
-                continue
+            filterResponse = self.__model.create_chat_completion(
+                tempMessages,
+                max_tokens=1024,
+                stream=self.stream,
+                temperature=self.temperature,
+            )
+            responseText = filterResponse['choices'][0]['message']['content']
+            logging.info(f"Model filter response {i} generated: {responseText}")
             
             try:
-                modelResponse["models"]
-                modelResponse["reasoning"]
-            except KeyError:
-                logging.warn("Model output does not have appropriate keys")
-                logging.info(f"Model output: {modelResponse}")
+                modelResponse = json.loads(responseText)
+            except json.decoder.JSONDecodeError:
+                logging.warn(f"Model generated invalid JSON: {responseText}")
+                continue
+
+            try:
+                # Stop generating when correct classification is achieved
+                VALID_MODELS = ["ENERGY PRICE FORECAST MODEL", "STEEL PRICE FORECAST MODEL"]
+                if all(word in VALID_MODELS for word in modelResponse["models"]):
+                    logging.info(f"Model recommendations valid. Recommendations: {json.dumps(modelResponse, indent=2)}")
+                    break
+            except Exception as e:
+                logging.info(f"Exception encountered when validating JSON contents: {e}")
 
             if i + 1 == self.__maxRetries:
                 raise RuntimeError("No usable response from LLM model")
+
+        # Return output based on model use recommendations
+        if len(modelResponse["models"]) >= 1:
+            return {
+                "orchestrationPlan": {
+                    "goal": "explain",
+                    "reasoning": modelResponse["reasoning"],
+                    "relevantModels": modelResponse["models"]
+                },
+                "messages": messages,
+            }
+        
+        return {
+            "orchestrationPlan": {
+                "goal": "deny",
+                "reasoning": "Not implemented",
+            },
+            "messages": messages,
+        }
