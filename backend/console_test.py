@@ -1,6 +1,6 @@
 import sys
 
-from model_handler import ConsoleModelHandler
+from model_handler.console_model_handler import ConsoleModelHandler
 
 
 def main():
