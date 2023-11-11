@@ -1,4 +1,5 @@
 import time
+import random
 
 from model_handler.model_handler import ModelHandler
 from orchestrators.orchestrator_base import OrchestratorBase
@@ -34,8 +35,8 @@ class Orchestrator(OrchestratorBase):
 
         asset_tag = handler.send_asset("html", "<h1>Hello world</h1>")
         handler.send_text(asset_tag)
-
-        raise Exception("This is an exception")
+        if random.random() < 0.3:
+            raise Exception("This is an exception")
 
         for i in range(5):
             handler.send_text("Hello world")
