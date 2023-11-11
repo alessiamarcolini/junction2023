@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   HtmlFragment,
   ImageFragment,
@@ -9,11 +9,11 @@ import {
 import { DemoMessageContainer } from "./components/DemoMessageContainer";
 import { MessageContainer } from "./components/MessageContainer";
 import { Spinner } from "./components/Spinner";
-import { useSocket, useSocketEvent } from "./hooks/useSocket";
-import { Asset, Execution, Request, TextReceivedEvent } from "./types";
-import { calculateSpinnerMessage, scrollToBottom } from "./utils";
-import { RECOMMENDED_DEMO_MESSAGES, STATIC_PATH } from "./constants";
 import { WrapperContainer } from "./components/WrapperContainer";
+import { RECOMMENDED_DEMO_MESSAGES, STATIC_PATH } from "./constants";
+import { useSocket, useSocketEvent } from "./hooks/useSocket";
+import { Execution, Request, TextReceivedEvent } from "./types";
+import { calculateSpinnerMessage } from "./utils";
 
 function App() {
   const [input, setInput] = useState<string>("");
@@ -46,16 +46,14 @@ function App() {
       console.log('message recieved', {message})
       setAssets((assets) => {
         const regex = "^<asset:.*";
-        const words: MessageFragment[] = message.text.split(" ").map((word) => {
-          console.log("word", word);
+        const words = message.text.split(" ");
+        const rawFragments : MessageFragment[]= words.map((word) => {
           if (!word.match(regex)) {
-            console.log("it is a text");
             return {
               type: "text",
               text: word,
             };
           }
-
           const tokens = word.slice(1, -1).split(":");
           if (tokens[1] === "image") {
             const fragment: ImageFragment = {
@@ -70,8 +68,10 @@ function App() {
           };
           return fragment;
         });
-        console.log(words);
-        const newFragments = [...assets, ...words].reduce<MessageFragment[]>(
+
+
+        console.log({words, rawFragments});
+        const newFragments = [...assets, ...rawFragments].reduce<MessageFragment[]>(
           (acc: MessageFragment[], curr: MessageFragment) => {
             if (
               acc.length === 0 ||
@@ -80,10 +80,11 @@ function App() {
             ) {
               return [...acc, curr];
             }
-            (acc[acc.length - 1] as TextFragment).text = `${
-              (acc[acc.length - 1] as TextFragment).text
-            } ${curr.text}`;
-            return acc;
+            const fragment = {
+             ...acc[acc.length - 1] as TextFragment,
+             text: `${(acc[acc.length - 1] as TextFragment).text} ${curr.text}`
+             }
+            return [...acc.slice(0, -1), fragment];
           },
           [],
         );
