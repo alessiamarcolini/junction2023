@@ -136,7 +136,7 @@ function App() {
               <DemoDiscussions onClick={demoMessageClickHandler} />
           )}
           {messageHistory.map((message, idx) => (
-            <MessageContainer message={message} key={idx} />
+            <MessageContainer message={message} key={idx} hideDecision={message.decision.length === 0} />
           ))}
 
           {executionState && executionState.progress != null && (
