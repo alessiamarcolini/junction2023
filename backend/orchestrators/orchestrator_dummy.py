@@ -26,11 +26,18 @@ class Orchestrator(OrchestratorBase):
 
         handler.send_text("Hello world")
         time.sleep(2)
-        handler.send_asset("html", "<h1>Hello world</h1>")
         time.sleep(2)
-        for i in range(10):
+        for i in range(5):
             handler.send_text("Hello world")
             time.sleep(.1)
+
+        asset_tag = handler.send_asset("html", "<h1>Hello world</h1>")
+        handler.send_text(asset_tag)
+
+        for i in range(5):
+            handler.send_text("Hello world")
+            time.sleep(.1)
+
         time.sleep(2)
         handler.finalize()
 

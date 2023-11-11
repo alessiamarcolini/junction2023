@@ -19,6 +19,7 @@ class SocketModelHandler(ModelHandler):
         filename = f"{id}.{type}"
         print(f"Sending {filename} {asset}")
         self.__sio.emit("send_asset", {"id": id, "type": type, "asset": asset})
+        return f"<asset:{type}:{id}.{type}>"
 
     def finalize(self):
         print(f"Finalizing")

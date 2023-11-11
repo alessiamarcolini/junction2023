@@ -18,6 +18,7 @@ class ConsoleModelHandler(ModelHandler):
         id = str(uuid.uuid4())
         filename = f"{id}.{type}"
         print(f"Sending {filename} {asset}")
+        return f"<asset:{type}:{id}.{type}>"
 
     def finalize(self):
         self.__finalized = True
