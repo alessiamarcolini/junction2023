@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from module_base import ModuleBase
-from train_steel_model import train, formulate_explanation_string, create_lag_features_forecast
+from train_steel_model import train, formulate_explanation_string, create_lag_features_forecast, create_forecast_plot
 
 
 class SteelModule(ModuleBase):
@@ -16,14 +16,17 @@ class SteelModule(ModuleBase):
         self.feature_cols = ["Germany_electricity_index"]
 
     def _load_model(self, model_filename: str, horizon: int) -> BaseEstimator:
-        if Path(f"models/steel/{model_filename}.pkl").exists():
-            with open(f"models/steel/{model_filename}.pkl", "rb") as f:
+        model_path = f"..//..//models/steel/{model_filename}.pkl"
+        if Path(model_path).exists():
+            with open(Path(model_path), "rb") as f:
                 model = pickle.load(f)
         else:
             print(
                 f"Model {model_filename} does not exist. Training new model."
             )
             model = train(self.data, self.target_column, self.feature_cols, horizon=horizon)
+            with open(model_path, 'wb') as file:
+                pickle.dump(model, file)
         return model
     
     def _load_data(self, ):
@@ -45,7 +48,7 @@ class SteelModule(ModuleBase):
         df = pd.merge(df, df_electricity, on="time", how="left")
         df = df.replace(':', method='ffill')
 
-        return df, self.model_name
+        return df.tail(36), self.model_name
 
     def execute(self, horizon: int) -> str:
         self.data, self.data_name = self._load_data()
@@ -61,10 +64,14 @@ class SteelModule(ModuleBase):
         last_label_data = self.data[["time", self.target_column]].tail(horizon)
         model_result_text = formulate_explanation_string(model, forecast_features, last_date, horizon, last_label_data)        
 
-        return model_result_text
+        plot_str = create_forecast_plot(self.data, model.predict(forecast_features))
+        print(plot_str)
+
+        return model_result_text, plot_str
     
 
 if __name__ == "__main__":
     module = SteelModule("steel")
-    result = module.execute(horizon=3)
-    print(result)
+    reason, plot = module.execute(horizon=3)
+    print(reason)
+    print(plot)

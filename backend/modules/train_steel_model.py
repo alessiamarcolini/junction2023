@@ -6,6 +6,8 @@ from dateutil.relativedelta import relativedelta
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
+from bokeh.embed import file_html
+from bokeh.resources import CDN
 from sklearn.metrics import mean_squared_error
 
 def zip_string(arr1, arr2):
@@ -136,3 +138,99 @@ def formulate_explanation_string(model, forecast_features, last_date, horizon, l
     data_explanation += "The t-x where x represents the delay in the features e-g t-1 represents the previous months data in the given column\n"
 
     return data_explanation
+
+import pandas as pd
+from datetime import datetime
+from bokeh.plotting import figure, show
+from bokeh.models import ColumnDataSource, HoverTool
+from bokeh.layouts import column
+
+from bokeh.embed import file_html
+from bokeh.resources import CDN
+from bokeh.palettes import Category10
+
+
+
+def create_forecast_plot(past_df, predictions, past_target_col = "Germany_steel_index"):
+    # Sample Data
+    past_data = {
+        'time': np.array(past_df["time"]),
+        'Germany_steel_index': np.array(past_df[past_target_col])
+    }
+    last_date = str(past_df["time"].max())
+    print(last_date)
+    forecast_data = {
+        'time': generate_upcoming_months(last_date, 3),
+        'Germany_steel_index': predictions
+    }
+
+    #past_df = pd.DataFrame(past_data)
+    past_df = past_df.tail(11)
+    past_df["time"] = pd.to_datetime(past_df["time"])
+    forecast_df = pd.DataFrame(forecast_data)
+    forecast_df["time"] = pd.to_datetime(forecast_df["time"])
+    # Create Bokeh plot
+    # Create Bokeh plot
+    p = figure(
+        title="Short-term Business Statistics - Steel Index",
+        x_axis_label="time",
+        y_axis_label="Index Value",
+        x_axis_type="datetime",
+    )
+    p.title.text_font_size = '18pt'
+
+    source_forecast = ColumnDataSource(forecast_df)
+    forecast_dots = p.circle(
+        x="time",
+        y="Germany_steel_index",
+        size=10,
+        color=Category10[3][1],
+        legend_label="Forecast Data",
+        source=source_forecast,
+    )
+    forecast_line = p.line(
+        x="time",
+        y="Germany_steel_index",
+        line_width=4,
+        color=Category10[3][1],
+        legend_label="Forecast Data",
+        source=source_forecast,
+    )
+    p.line(
+        pd.concat([past_df["time"].tail(1), forecast_df["time"].head(1)]),
+        pd.concat([past_df["Germany_steel_index"].tail(1), forecast_df["Germany_steel_index"].head(1)]),
+        line_width=4,
+        color=Category10[3][1],
+    )
+
+    # Plot past data as dots
+    source_past = ColumnDataSource(past_df)
+    past_dots = p.circle(
+        x="time",
+        y="Germany_steel_index",
+        size=10,
+        color=Category10[3][0],
+        legend_label="Past Data",
+        source=source_past,
+    )
+    past_line = p.line(
+        x="time",
+        y="Germany_steel_index",
+        color=Category10[3][0],
+        legend_label="Past Data",
+        source=source_past,
+        line_width=4,
+    )
+
+    # Add hover tool
+    hover = HoverTool()
+    hover.tooltips = [("time", "@time{%F}"), ("Index Value", "@Germany_steel_index")]
+    hover.formatters = {"@time": "datetime"}
+    p.add_tools(hover)
+
+    # Add labels and legend
+    p.legend.location = "bottom_left"
+    p.legend.click_policy = "hide"
+    html = file_html(p, CDN)
+
+    return html
