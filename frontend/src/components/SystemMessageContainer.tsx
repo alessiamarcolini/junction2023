@@ -20,11 +20,17 @@ export const SystemMessageContainer = ({
   const [width, setWidth] = useState(0);
 
   useLayoutEffect(() => {
-    if (ref.current) {
-      setWidth(ref.current.offsetWidth);
-    }
+    const updateSize = () => {
+      if (ref.current) {
+        setWidth(ref.current.offsetWidth);
+      }
+      if (ref.current) {
+        setWidth(ref.current.offsetWidth);
+      }
+    };
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
   }, [ref]);
-  console.log(message);
   return (
     <div className={"justify-items-start grid  h-fit w-full"}>
       <div className="flex items-end">
@@ -42,8 +48,8 @@ export const SystemMessageContainer = ({
               case "text":
                 return (
                   <div key={fragmentIdx}>
-                    {fragment.text.split("\n").map((t) => (
-                      <p>{t}</p>
+                    {fragment.text.split("\n").map((t, idx) => (
+                      <p key={idx}>{t}</p>
                     ))}
                   </div>
                 );
@@ -65,8 +71,8 @@ export const SystemMessageContainer = ({
                 return (
                   <div key={fragmentIdx} className="w-full px-4 py-12 mx-auto">
                     <iframe
-                      width={width * 0.9}
-                      height={width * 0.9}
+                      width={'100%'}
+                      height={width * 0.9 + 3}
                       src={fragment.src}
                     />
                   </div>
