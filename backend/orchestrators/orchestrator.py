@@ -8,6 +8,7 @@ from modules.module_planner import PlannerModule
 from modules.module_time import TimeModule
 from modules.module_energy import EnergyModule
 from modules.module_steel import SteelModule
+from modules.module_deny import DenyModule
 
 # 3rd party packages
 import numpy as np
@@ -16,7 +17,7 @@ class Orchestrator(OrchestratorBase):
     def __init__(self):
         Super().__init__()
     
-    def execute(self, handler: ModelHandler):
+    def execute(self, handler: ModelHandler) -> None:
         handler.update_status_message("Thinking...")
         planner = PlannerModule(
             modelName="mistral-7B-instruct"
@@ -31,6 +32,15 @@ class Orchestrator(OrchestratorBase):
         # Deny request (politely)
         if goal == "deny":
             handler.update_progress_bar(50)
+            DenyModule(
+                modelName="mistral-7B-instruct"
+            ).execute(
+                handler=handler,
+                reason=orchestrationPlan["orchestrationPlan"]["reasoning"]
+            )
+            handler.update_progress_bar(100)
+            handler.update_status_message("Done!")
+            return
 
         handler.update_status_message("Preparing forecasts...")
         models = orchestrationPlan["orchestrationPlan"]["relevantModels"]
@@ -72,4 +82,5 @@ class Orchestrator(OrchestratorBase):
             }
 
         # Generate model summary
+        
             
