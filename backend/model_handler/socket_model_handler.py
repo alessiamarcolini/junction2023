@@ -1,4 +1,6 @@
-from typing import List, Union
+import uuid
+from typing import Any, List, Union
+
 from .model_handler import ModelHandler
 
 
@@ -12,9 +14,11 @@ class SocketModelHandler(ModelHandler):
         print(f"Sending text {text}")
         self.__sio.emit("send_text", text)
 
-    def send_image(self, image):
-        print(f"Sending image {image}")
-        self.__sio.emit("send_image", image)
+    def send_asset(self, type: str, asset: Any):
+        id = str(uuid.uuid4())
+        filename = f"{id}.{type}"
+        print(f"Sending {filename} {asset}")
+        self.__sio.emit("send_asset", {"id": id, "type": type, "asset": asset})
 
     def finalize(self):
         print(f"Finalizing")

@@ -26,7 +26,7 @@ class Orchestrator(OrchestratorBase):
 
         handler.send_text("Hello world")
         time.sleep(2)
-        handler.send_image("https://i.imgur.com/2X2IDEA.jpeg")
+        handler.send_asset("html", "<h1>Hello world</h1>")
         time.sleep(2)
         for i in range(10):
             handler.send_text("Hello world")

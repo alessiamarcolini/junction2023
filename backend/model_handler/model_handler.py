@@ -7,7 +7,7 @@ class ModelHandler:
     def send_text(self, text):
         pass
 
-    def send_image(self, image):
+    def send_asset(self, type: str, asset: Any):
         pass
 
     def finalize(self):
