@@ -34,14 +34,12 @@ Output: PASS
 </s>
 
 <s>
-Input: How much energy does steel processing consume? Can you forecast
-factors influencing energy prices in the near future?
+Input: How much energy does steel processing consume? Can you forecast factors influencing energy prices in the near future?
 Output: PASS
 </s>
 
 <s>
-Input: Can you help me generate some python code to print to the
-console?
+Input: Can you help me generate some python code to print to the console?
 Output: DECLINE
 </s>
 
@@ -59,62 +57,45 @@ STEEL PRICE FORECAST MODEL: Predicts steel alloy prices
 up to 6 months into the future.
 
 List ALL models applicable to the problem at hand. The Output
-should be a valid JSON string with the following keys:
-"models", "reasoning". "models" is simply a list of relevant models.
-In "reasoning", you must argue in one sentence WHY YOU THINK 
-THE MODELS YOU SELECTED ARE RELEVANT. [\INST]
+should include a list of relevant models. Additionally, you must 
+argue in one sentence WHY YOU THINK THE MODELS YOU SELECTED ARE RELEVANT. [\INST]
 Here are some examples:
 
 Input: I want to know the price of purchasing steel in 6 weeks' time. Can you help me?
-Output: {
-    "models": ["STEEL PRICE FORECAST MODEL"],
-    "reasoning": "Steel price directly impacts the purchase price."
-}
+Models: STEEL PRICE FORECAST MODEL,
+Reasoning: Steel price directly impacts the purchase price.
 </s>
 
 <s>
 Input: Do you know how much energy it takes to produce steel?
-Output: {
-    "models" : [],
-    "reasoning": "The amount of energy required cannot be predicted by
-a price forecast model."
-}
+Models : NONE,
+Reasoning: The amount of energy required cannot be predicted by a price forecast model.
 </s>
 
 <s>
-Input: I want to know the energy costs for manufacturing steel in 6 weeks' time.
-Can you help me?
-Output: {
-    "models": ["ENERGY PRICE MODEL"],
-    "reasoning": "The energy price forecasting model directly predicts future energy costs."
-}
+Input: I want to know the energy costs for manufacturing steel in 6 weeks' time. Can you help me?
+Models: ENERGY PRICE MODEL,
+Reasoning: The energy price forecasting model directly predicts future energy costs.
 </s>
 
 <s>
-Input: I want to forecast the profit margin for producing steel for the next 2 months.
-Can you help me come up with an estimate?
-Output: {
-    "models": ["ENERGY PRICE FORECAST MODEL", "STEEL PRICE FORECAST MODEL"],
-    "reasoning": "To calculate the profit, you need both a steel price forecast (revenue) and
-an energy price forecast (cost)."
-}
+Input: I want to forecast the profit margin for producing steel for the next 2 months. Can you help me come up with an estimate?
+Models: ENERGY PRICE FORECAST MODEL, STEEL PRICE FORECAST MODEL,
+Reasoning: To calculate the profit, you need both a steel price forecast (revenue) and an energy price forecast (cost).
 </s>
 
 <s>
-Input: I want to know the latest news about the steel industry. Can you summarize them
-for me please?
-Output: {
-    "models" : [],
-    "reasoning": "The forecasting models cannot be used to predict the news, only prices."
-}
+Input: I want to know the latest news about the steel industry. Can you summarize them for me please?
+Models : NONE,
+Reasoning: The forecasting models cannot be used to predict the news, only prices.
 </s>
 
 Input: """
 
 BREAKDOWN_PROMPT_BEGIN = """<s>[INST]
 You are an assistant and your task is to break down complex tasks into
-a maximum of five smaller steps. Your output should be ONLY valid a JSON 
-string: A list with each element as dictionary defining a sub-task
+a maximum of five smaller steps. Your output should be ONLY a list with 
+each element on a new line.
 
 Please incorporate ALL of the following models into your analysis and
 provide appropriate inputs to them using a dictionary with type and input
@@ -145,19 +126,10 @@ BREAKDOWN_PROMPT_BASIC = """[/INST]
 Here are some examples to help you:
 
 Input: How can I improve energy efficiency in steel manufacturing?
-Output: [
-    {
-    "type": "LLM",
-    "task": "Generate ideas for how to modernize equipment"
-    }, {
-    "type": "LLM",
-    "task": "Generate ideas for how to optimize processes (waste heat
-    management, energy management)"
-    }, {
-    "type": "LLM",
-    "task": "Generate ideas for how to raise awareness among staff"
-    }
-]
+Output: 
+LLM - Task: Generate ideas for how to modernize equipment,
+LLM - Task: Generate ideas for how to optimize processes (waste heat management, energy management),
+LLM - Task: Generate ideas for how to raise awareness among staff
 </s>
 """
 
@@ -165,40 +137,19 @@ BREAKDOWN_ENERGY_PROMPT = """
 <s>
 Input: How can I improve my steel manufacturing company's profitability
 in the next 12 weeks?
-Output: [
-    {
-    "type": "LLM",
-    "task": "Generate ideas for how to optimize processes"
-    }, {
-    "type": "ENERGY_PRICE_MODEL",
-    "parameters": {
-        "months": 3.0
-    }
-    },
-    {
-    "type": "LLM",
-    "task": "Decide to purchase power in advance based on energy price model forecast"
-    }
-]
+Output: 
+LLM - Task: Generate ideas for how to optimize processes, 
+ENERGY_PRICE_MODEL - Months: 3.0
+LLM - Task: Decide to purchase power in advance based on energy price model forecast
 </s>
 """
 
 BREAKDOWN_STEEL_PROMPT = """
 <s>
 Input: Should I produce more of steel alloy 10B in the two weeks?
-Output: [
-    {
-    "type": "STEEL_PRICE_MODEL",
-    "parameters": {
-        "months": 0.5,
-        "alloy": "10B"
-    }
-    },
-    {
-    "type": "LLM",
-    "task": "Decide to produce more alloys based on steel price model forecast"
-    }
-]
+Output: 
+STEEL_PRICE_MODEL - Months: 0.5 ; Alloy: "10B"
+LLM - Task: Decide to produce more alloys based on steel price model forecast
 </s>
 """
 
@@ -207,7 +158,7 @@ class PlannerModule(ModuleBase):
         modelName: str = "mistral-7B-instruct",
         maxRetries: int = 3):
         super().__init__()
-        self.__model = Llama(model_path=cfg.models[modelName], n_gpu_layers=128, n_ctx=1024)
+        self.__model = Llama(model_path=cfg.models[modelName], n_gpu_layers=128, n_ctx=2048)
         self.__maxRetries = maxRetries
         self.modelName = modelName
         self.stream = False
@@ -227,9 +178,6 @@ class PlannerModule(ModuleBase):
 
         # Task 1 - do we need to answer this message?
         for i in range(self.__maxRetries):
-            # TODO: Remove - testing
-            responseText = "accept"
-            break
             filterResponse = self.__model.create_chat_completion(
                 messages,
                 max_tokens=16,
@@ -237,9 +185,10 @@ class PlannerModule(ModuleBase):
                 temperature=self.temperature,
             )
             responseText = filterResponse['choices'][0]['message']['content'].lower()
-            logging.info(f"Filter response {i} generated: {responseText}")
+            logging.info(f"Accept/deny response {i} generated: {responseText}")
 
-            if responseText in ["accept", "decline"]:
+            if any(word in responseText for word in ["pass", "decline"]):
+                logging.info(f"Correct response generated: {responseText}")
                 break
             
             logging.info(f"Invalid filtering response. Retrying ... ({i}/{self.__maxRetries})")
@@ -257,7 +206,7 @@ class PlannerModule(ModuleBase):
         logging.info(f"Deciding on models to use for prompt: {messages[-1]["content"]}")
         messages[-1]["content"] = MODEL_PROMPT + messages[-1]["content"] 
 
-        # Add custom prompt to message
+        # Task 2 - what models to use?
         for i in range(self.__maxRetries):
             filterResponse = self.__model.create_chat_completion(
                 messages,
@@ -266,18 +215,20 @@ class PlannerModule(ModuleBase):
                 temperature=self.temperature,
             )
             responseText = filterResponse['choices'][0]['message']['content']
-            logging.info(f"Filter response {i} generated: {responseText}")
+            responseText.lstrip("Output: ")
+            logging.info(f"Model filter response {i} generated: {responseText}")
 
             try:
                 modelResponse = json.loads(responseText)
             except ValueError:
                 logging.warn("Couldn't convert model recommendation to JSON. Retrying...")
+                logging.info(f"Tried to convert: {responseText}")
                 continue
 
             # Stop generating when correct classification is achieved
             acceptableResponses = ["forecast model", "none"]
             if any(word.lower() in acceptableResponses for word in modelResponse["models"]):
-                logging.info(f"Model recommendations valid. Recommendations: {modelResponse["models"]}")
+                logging.info(f"Model recommendations valid. Recommendations: {json.dumps(modelResponse, indent=2)}")
                 break
         
         # Get models
@@ -289,16 +240,20 @@ class PlannerModule(ModuleBase):
 
         # Create breakdown prompt based on applicable models
         breakDownPrompt = BREAKDOWN_PROMPT_BEGIN
-        breakDownPrompt += BREAKDOWN_ENERGY_MODEL if "energy price forecast model" in models else breakDownPrompt
-        breakDownPrompt += BREAKDOWN_STEEL_MODEL if "steel price forecast model" in models else breakDownPrompt
+        if "energy price forecast model" in models:
+            breakDownPrompt += BREAKDOWN_ENERGY_MODEL
+        if "steel price forecast model" in models:
+            breakDownPrompt += BREAKDOWN_STEEL_MODEL
         breakDownPrompt += BREAKDOWN_PROMPT_BASIC
-        breakDownPrompt += BREAKDOWN_ENERGY_PROMPT if "energy price forecast model" in models else breakDownPrompt
-        breakDownPrompt += BREAKDOWN_STEEL_PROMPT if "steel price forecast model" in models else breakDownPrompt
+        if "energy price forecast model" in models:
+            breakDownPrompt += BREAKDOWN_ENERGY_PROMPT
+        if "steel price forecast model" in models:
+            breakDownPrompt += BREAKDOWN_STEEL_PROMPT
         breakDownPrompt += "Input: "
         logging.info(f"Problem breakdown prompt: {breakDownPrompt}")
         messages[-1]["content"] = breakDownPrompt + messages[-1]["content"]
 
-        # Create orchestration plan
+        # Task 3 - Create orchestration plan
         for i in range(self.__maxRetries):
             filterResponse = self.__model.create_chat_completion(
                 messages,
@@ -307,12 +262,14 @@ class PlannerModule(ModuleBase):
                 temperature=self.temperature,
             )
             responseText = filterResponse['choices'][0]['message']['content']
-            logging.info(f"Filter response {i} generated: {responseText}")
+            responseText.lstrip("Output: ")
+            logging.info(f"Orchestration response {i} generated: {responseText}")
 
             try:
                 orchestrationResponse = json.loads(responseText)
             except ValueError:
-                logging.warn("Couldn't conver orchestration llm response to JSON")
+                logging.warn("Couldn't conver orchestration llm response to JSON. Retrying...")
+                logging.info(f"Tried to convert: {responseText}")
                 continue
 
             # Validate output
