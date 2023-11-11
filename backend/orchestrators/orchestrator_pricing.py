@@ -40,6 +40,7 @@ class Orchestrator(OrchestratorBase):
             )
             handler.update_progress_bar(100)
             handler.update_status_message("Done!")
+            handler.finalize()
             return
 
         handler.update_status_message("Preparing forecasts...")
