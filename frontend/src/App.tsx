@@ -30,6 +30,7 @@ function App() {
       fragments: [{ type: "text", text: input }],
       owner: "user",
     };
+    setInput("");
     const newHistory = [...messageHistory, data];
     setMessageHistory(newHistory);
     const emitData: Request[] = newHistory.map((message) => ({
@@ -66,6 +67,12 @@ function App() {
             className="shadow appearance-none border border-primary-400 h-full rounded-xl w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
             placeholder="Input..."
             onChange={(e) => setInput(e.target.value)}
+            value={input}
+            onKeyDown={(e) => {
+              if (e.code === "Enter") {
+                onClickHandler();
+              }
+            }}
           />
           <button
             disabled={input.length === 0}
