@@ -1,39 +1,36 @@
-import uuid
-import socketio
+import time
 from threading import Thread
-
 
 # standard Python
 
 
 class Executor(Thread):
-    def __init__(self, url, taskQueue):
+    def __init__(self, sid, sio, taskQueue):
         Thread.__init__(self)
-        self.sio = socketio.SimpleClient()
-        self.url = url
-        self.execution = None
+        self.sio = sio
+        self.sid = sid
         self.taskQueue = taskQueue
+        self.execution = None
+        self.user_sio = None
 
     def run(self):
-        self.sio.connect(self.url)
-
         while True:
+            print(f"Executor({self.sid}) Getting new task")
             task = self.taskQueue.get()
-            execution = task["execution"]
-            user_sio = task["user_sio"]
+            print(f"Executor({self.sid}) Got task {task}")
 
-            execution["status"] = "requested"
-            self.sio.emit("execute", execution)
-            user_sio.emit("execution_updated", execution)
+            self.execution = task["execution"]
+            self.user_sio = task["user_sio"]
+
+            self.execution["status"] = "requested"
+            self.sio.emit("execute", self.execution)
+            self.user_sio.emit("execution_updated", self.execution)
 
             while True:
-                event = self.sio.receive()
-                event_type = event[0]
-
-                if event_type == "finalize":
-                    execution["status"] = "completed"
-                    user_sio.emit("execution_updated", execution)
+                print(f"Executor({self.sid}) Waiting for execution to finish")
+                time.sleep(3)
+                if not self.execution:
                     break
-                elif event_type == "started":
-                    execution["status"] = "started"
-                    user_sio.emit("execution_updated", execution)
+
+    def recieve(self, event, data):
+        print(f"Executor({self.sid}) Event {event} recieved {data}")
