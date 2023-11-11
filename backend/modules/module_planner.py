@@ -21,7 +21,7 @@ from langchain.schema import StrOutputParser
 
 DENY_PROMPT = """<s>[INST]
 You are an assistant filtering inputs for further processing.
-IF THE PROBLEM IS RELATED TO THE STEEL INDUSTRY in any way,
+IF THE PROBLEM IS RELATED TO THE STEEL INDUSTRY OR ENERGY PRICES in any way,
 you need to pass on the output for further processing. In these cases,
 only generate one word: "PASS". Otherwise, you need to return the
 word "DECLINE" for the request. RETURN ONLY ONE WORD.
@@ -57,10 +57,10 @@ makes sense to apply a set of pre-trained machine learning
 models to the problem. These models are:
 
 ENERGY PRICE FORECAST MODEL: Predicts energy prices up to
-6 months into the future.
+12 months into the future.
 
 STEEL PRICE FORECAST MODEL: Predicts steel alloy prices
-up to 6 months into the future.
+up to 12 months into the future.
 
 List ALL models applicable to the problem at hand. The Output
 should include a list of relevant models. Additionally, you must 
