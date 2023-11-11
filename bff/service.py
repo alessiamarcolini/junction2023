@@ -1,10 +1,21 @@
 import eventlet
 import socketio
+from queue import Queue
+from .executor import Executor
 
 STATIC_FILES = {
     "/": "../frontend/build/index.html",
     "/static": "../frontend/build/static",
 }
+
+taskQueue = Queue()
+
+executors = [
+  Executor("http://localhost:5001", taskQueue),
+]
+
+for executor in executors:
+    executor.start()
 
 
 def routes(sio):
@@ -12,11 +23,8 @@ def routes(sio):
     def connect(sid, environ):
         print("connect ", sid)
 
-    @sio.on("execute")
-    def execute(sid, execution):
-        print(execution)
-        sio.emit("started", execution, room=sid)
-        sio.emit("finalize", execution, room=sid)
+    def execute(sid, messages):
+        print("execute ", sid, execution)
 
     pass
 
@@ -27,7 +35,7 @@ def main():
     routes(sio)
 
     if __name__ == "__main__":
-        eventlet.wsgi.server(eventlet.listen(("", 5001)), app)
+        eventlet.wsgi.server(eventlet.listen(("", 5000)), app)
 
 
 main()
