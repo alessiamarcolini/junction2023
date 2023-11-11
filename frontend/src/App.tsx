@@ -4,7 +4,7 @@ import { MessageContainer } from "./components/MessageContainer";
 import { Spinner } from "./components/Spinner";
 
 function App() {
-  const [messageHistory, setMessageHistory] = useState<string[]>([])
+  const [input, setInput] = useState<string>("");
   const messages: Message[] = [
     {
       fragments: [
@@ -31,7 +31,7 @@ function App() {
         },
       ],
       owner: "bot",
-      decision: 'yolo'
+      decision: "yolo",
     },
     {
       fragments: [
@@ -49,25 +49,38 @@ function App() {
         },
       ],
       owner: "bot",
-      decision: 'yolo again'
+      decision: "yolo again",
     },
   ];
+  const [messageHistory, setMessageHistory] = useState<Message[]>([]);
 
   return (
     <div className="text-secondary-300 bg-secondary-300 w-full grid justify-items-center h-screen">
       <div className="flex flex-col gap-4 w-full max-w-2xl bg-secondary-300 rounded-lg p-10 m-4 overflow-hidden">
         <div className="bg-secondary-100 flex flex-col w-full h-full rounded-lg overflow-scroll">
-          {messages.map((message, idx) => (
+          {messageHistory.length === 0 && <div className='text-center w-full p-4'>Hello there, how can I help you?</div>}
+          {messageHistory.map((message, idx) => (
             <MessageContainer message={message} key={idx} />
           ))}
-          <Spinner message='76%' />
+          <Spinner message="76%" />
         </div>
         <div className="flex gap-4 w-full">
           <input
             className="shadow appearance-none border border-primary-400 h-full rounded-xl w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
             placeholder="Input..."
+            onChange={(e) => setInput(e.target.value)}
           />
-          <button className="bg-secondary-200 min-w-[80px] rounded-lg h-full p-4 text-center duration-200 hover:bg-secondary-100">
+          <button
+            disabled={input.length === 0}
+            onClick={() => {
+              const data: Message = {
+                fragments: [{ type: "text", text: input }],
+                owner: 'user'
+              };
+            setMessageHistory([...messageHistory, data])
+            }}
+            className="bg-secondary-200 min-w-[80px] rounded-lg h-full p-4 text-center duration-200 hover:bg-secondary-100"
+          >
             Send
           </button>
         </div>
