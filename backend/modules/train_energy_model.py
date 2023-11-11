@@ -359,6 +359,8 @@ def plot_trend(previous_data, predicted_data, horizon, last_date):
         title="Energy Price Forecast",
         x_axis_label="Date",
         y_axis_label="Energy price [EUR/MWh]",
+        width=480,
+        height=480,
     )
 
     source_forecast = ColumnDataSource(forecast_df)
