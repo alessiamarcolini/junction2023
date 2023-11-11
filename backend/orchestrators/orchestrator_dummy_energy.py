@@ -1,4 +1,4 @@
-oriimport time
+import time
 
 from model_handler.model_handler import ModelHandler
 from modules.module_energy import EnergyModule
