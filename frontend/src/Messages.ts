@@ -1,3 +1,5 @@
+import { Sender } from "./types";
+
 export interface MessageBase {
   type: "text" | "image";
 }
@@ -12,10 +14,10 @@ export interface ImageFragment extends MessageBase {
   src: string;
 }
 
-export type MessageFragment = TextFragment | ImageFragment
+export type MessageFragment = TextFragment | ImageFragment;
 
 export type Message = {
-  fragments: MessageFragment[],
-  owner: 'system' | 'user',
-  decision?: string
-}
+  fragments: MessageFragment[];
+  owner: Sender;
+  decision?: string;
+};
