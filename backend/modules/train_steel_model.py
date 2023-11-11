@@ -204,6 +204,7 @@ def create_forecast_plot(past_df, predictions, past_target_col="Germany_steel_in
         height=480,
     )
     p.title.text_font_size = "18pt"
+    p.xaxis.major_label_orientation = 45
 
     source_forecast = ColumnDataSource(forecast_df)
     forecast_dots = p.circle(
