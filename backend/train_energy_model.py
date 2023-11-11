@@ -185,10 +185,10 @@ def plot_feature_importances(model, features_names, horizon: int | None = None):
 
 
 def save_model(model, features_names, horizon: int | None = None):
-    Path("models").mkdir(parents=True, exist_ok=True)
-    with open(f"models/energy_model_horizon={horizon}.pkl", "wb") as f:
+    Path("models/energy").mkdir(parents=True, exist_ok=True)
+    with open(f"models/energy/model_horizon={horizon}.pkl", "wb") as f:
         pickle.dump(model, f)
-    with open(f"models/energy_features_names_horizon={horizon}.pkl", "wb") as f:
+    with open(f"models/energy/features_names_horizon={horizon}.pkl", "wb") as f:
         pickle.dump(features_names, f)
 
 
@@ -203,7 +203,7 @@ def predict(model, data, horizon: int | None = None, lags: list[int] | None = No
 
 if __name__ == "__main__":
     data = pd.read_csv(
-        Path(__file__).parent.parent / "data/energy_dataset.csv",
+        Path(__file__).parent.parent / "data/energy/dataset.csv",
         parse_dates=["time"],
         index_col="time",
     )
@@ -213,6 +213,9 @@ if __name__ == "__main__":
     X_train, X_val, y_train, y_val, features_names = preprocess_data(
         data, horizon=horizon, lags=lags
     )
+
+    data_concat = np.concatenate([X_train, X_val])
+    np.save("data/energy/data_preprocessed.npy", data_concat)
 
     model = train_model(X_train, y_train, X_val, y_val, mode="random_search")
 
