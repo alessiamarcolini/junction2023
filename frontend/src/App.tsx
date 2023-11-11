@@ -79,7 +79,7 @@ function App() {
               };
             setMessageHistory([...messageHistory, data])
             }}
-            className="bg-secondary-200 min-w-[80px] rounded-lg h-full p-4 text-center duration-200 hover:bg-secondary-100"
+            className="bg-secondary-200 min-w-[80px] rounded-lg h-full border-2 border-secondary-200 p-4 text-center duration-200 hover:bg-secondary-100 disabled:bg-secondary-300 disabled:border-secondary-200 disabled:text-secondary-200"
           >
             Send
           </button>
