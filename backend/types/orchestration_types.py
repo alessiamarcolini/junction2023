@@ -5,4 +5,4 @@ class OrchestrationStep(TypedDict):
     role: Literal["function", "summary"]
     name: Literal["decline", "summary", "energy_forecast", "price_forecast"]
     reason: str
-    parameters: Optional[Dict[any]]
+    parameters: Optional[Dict]

@@ -2,6 +2,7 @@
 from typing import Any, List, Optional, Dict, Union
 from typing_extensions import TypedDict, NotRequired, Literal
 import logging
+import copy
 
 # Custom packages
 from backend.model_handler.model_handler import ModelHandler
@@ -12,32 +13,40 @@ import backend.config as cfg
 # 3-rd party packages
 from llama_cpp import Llama
 
-FILTER_PROMPT = """
+FILTER_PROMPT = """<s>[INST]
 You are an assistant filtering inputs for further processing.
 IF THE PROBLEM IS RELATED TO THE STEEL INDUSTRY in any way,
 you need to pass on the output for further processing. In these cases,
 only generate one word: "PASS". Otherwise, you need to return the
 word "DECLINE" for the request. RETURN ONLY ONE WORD.
+[\INST]
 
 Here are some examples:
 
 Input: Can you generate some images of cats?
 Output: DECLINE
+</s>
 
+<s>
 Input: I want to know the price of steel in 3 months.
 Output: PASS
+</s>
 
+<s>
 Input: How much energy does steel processing consume? Can you forecast
 factors influencing energy prices in the near future?
 Output: PASS
+</s>
 
+<s>
 Input: Can you help me generate some python code to print to the
 console?
 Output: DECLINE
+</s>
 
 Input: """
 
-MODEL_PROMPT = """
+MODEL_PROMPT = """<s>[INST]
 You are an assistant who needs to decide whether it 
 makes sense to apply a set of pre-trained machine learning
 models to the problem. These models are:
@@ -48,26 +57,44 @@ ENERGY PRICE FORECAST MODEL: Predicts energy prices up to
 STEEL PRICE FORECAST MODEL: Predicts steel alloy prices
 up to 6 months into the future.
 
-List ALL models applicable SEPARATED BY COMMAS. If NO MODELS
-ARE APPLICABLE, say "NONE". Here are some examples:
+List ALL models applicable to the problem at hand. For Output,
+list ONLY THE MODELS. Also, you must argue in one sentence WHY
+YOU THINK THEY ARE RELEVANT in Reasong. [\INST]
+Here are some examples:
 
 Input: I want to know the price of purchasing steel in 6 weeks' time. Can you help me?
 Output: STEEL PRICE FORECAST MODEL
+Reasoning: Steel price directly impacts the purchase price.
+</s>
 
+<s>
 Input: Do you know how much energy it takes to produce steel?
 Output: NONE
+Reasoning: The amount of energy required cannot be predicted by
+a price forecast model.
+</s>
 
+<s>
 Input: I want to know the energy costs for manufacturing steel in 6 weeks' time.
 Can you help me?
 Output: ENERGY PRICE FORECAST MODEL
+Reasoning: The energy price forecasting model directly predicts future energy costs.
+</s>
 
+<s>
 Input: I want to forecast the profit margin for producing steel for the next 2 months.
 Can you help me come up with an estimate?
 Output: ENERGY PRICE FORECAST MODEL, STEEL PRICE FORECAST MODEL
+Reasoning: To calculate the profit, you need both a steel price forecast (revenue) and
+an energy price forecast (cost).
+</s>
 
+<s>
 Input: I want to know the latest news about the steel industry. Can you summarize them
 for me please?
 Output: NONE
+Reasoning: The forecasting models cannot be used to predict the news, only prices.
+</s>
 
 Input: """
 
@@ -97,7 +124,7 @@ class PlannerModule(ModuleBase):
     def execute(self, handler: ModelHandler) -> List[OrchestrationStep]:
         logging.info("Executing planner function")
         self.__modelHandler = handler
-        messages = handler.messages()
+        messages = copy.deepcopy(handler.messages())
 
         # Add custom prompt to beginning of
         # last message
@@ -105,7 +132,7 @@ class PlannerModule(ModuleBase):
         messages[-1]["content"] = FILTER_PROMPT + messages[-1]["content"] + "\n Output:"
 
         # Task 1 - do we need to answer this message?
-        for i in range(maxRetries):
+        for i in range(self.__maxRetries):
             # TODO: Remove - testing
             responseText = "accept"
             break
@@ -132,29 +159,29 @@ class PlannerModule(ModuleBase):
             }]
         
         # Accept - create plan
-        messages = handler.messages()
+        messages = copy.deepcopy(handler.messages())
         logging.info(f"Deciding on models to use for prompt: {messages[-1]["content"]}")
-        messages[-1]["content"] = MODEL_PROMPT + messages[-1]["content"] + "\n Output:"
+        messages[-1]["content"] = MODEL_PROMPT + messages[-1]["content"] 
 
         # Add custom prompt to message
-        for i in range(maxRetries):
+        for i in range(self.__maxRetries):
             filterResponse = self.__model.create_chat_completion(
                 messages,
                 max_tokens=128,
                 stream=self.stream,
                 temperature=self.temperature,
             )
-            responseText = filterResponse['choices'][0]['message']['content'].lower()
+            responseText = filterResponse['choices'][0]['message']['content']
             logging.info(f"Filter response {i} generated: {responseText}")
 
             # Stop generating when correct classification is achieved
             acceptableResponses = ["forecast model", "none"]
-            if any(word in responseText for word in acceptableResponses):
+            if any(word in responseText.lower() for word in acceptableResponses):
                 break
         
         # Get models
         modelNames = ["energy price forecast model", "steel price forecast model"]
-        models = [word in responseText for word in modelNames]
+        models = [word in responseText.lower() for word in modelNames]
 
         # Break down problem
 
