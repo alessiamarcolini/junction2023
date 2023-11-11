@@ -3,11 +3,11 @@ from typing_extensions import TypedDict, NotRequired, Literal
 
 from custom_types.message_types import ChatCompletionRequestMessage
 
-class OrhestrationPlan(TypedDict):
+class OrchestrationPlan(TypedDict):
     goal: Literal["deny", "explain"]
     reasoning: str
     relevantModels: NotRequired[Literal["ENERGY PRICE FORECAST MODEL", "STEEL PRICE FORECAST MODEL"]]
 
 class ExecutionReturn(TypedDict):
-    orchestrationPlan: OrhestrationPlan
+    orchestrationPlan: OrchestrationPlan
     messages: List[ChatCompletionRequestMessage]

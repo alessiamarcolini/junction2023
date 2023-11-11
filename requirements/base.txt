@@ -3,3 +3,9 @@ scikit_learn==1.3.2
 shap==0.43.0
 matplotlib==3.8.1
 bokeh==3.3.1
+llama-cpp-python
+typing-extensions
+python-socketio[client]
+eventlet
+langchain
+websocket-client

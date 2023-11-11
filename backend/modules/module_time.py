@@ -72,7 +72,7 @@ class TimeModule(ModuleBase):
 
         logging.info(f"Initialized time model {modelName}")
     
-    def execute(self, handler: ModelHandler) -> ExecutionReturn:
+    def execute(self, handler: ModelHandler) -> float:
         logging.info("Executing time function")
         self.__modelHandler = handler
         messages = handler.messages()
