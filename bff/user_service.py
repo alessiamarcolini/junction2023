@@ -9,6 +9,9 @@ STATIC_FILES = {
     "/": "./frontend/dist/index.html",
     "/assets": "./frontend/dist/assets",
     "/vite.svg": "./frontend/dist/vite.svg",
+    "/icon.ico": "./frontend/dist/icon.ico",
+    "/manifest.json": "./frontend/dist/manifest.json",
+    "/logo.png": "./frontend/dist/logo.png",
     "/outfiles": ".temp/outfiles",
 }
 
