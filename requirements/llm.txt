@@ -1,6 +1,6 @@
 llama-cpp-python
 typing-extensions
-python-socketio
+python-socketio[client]
 eventlet
 langchain
 numpy

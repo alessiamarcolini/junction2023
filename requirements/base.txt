@@ -5,6 +5,7 @@ matplotlib==3.8.1
 bokeh==3.3.1
 llama-cpp-python
 typing-extensions
-python-socketio
+python-socketio[client]
 eventlet
 langchain
+websocket-client
