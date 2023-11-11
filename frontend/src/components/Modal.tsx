@@ -23,7 +23,7 @@ export const Modal = ({ children, callback }: OverlayProps) => {
             Close
           </button>
         </div>
-        <div className="p-8">
+        <div className="p-8 overflow-scroll">
           {children}
         </div>
       </div>
