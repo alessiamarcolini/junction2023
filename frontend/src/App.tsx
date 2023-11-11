@@ -41,7 +41,7 @@ function App() {
     setMessageHistory([
       ...messageHistory,
       {
-        owner: "system",
+        senderRole: "system",
         fragments: [{ type: "text", text: currentMessage }],
         decision,
       },
@@ -56,11 +56,11 @@ function App() {
     const newHistory = [...messageHistory, message];
     setMessageHistory(newHistory);
     const emitData: Request[] = newHistory.map((message) => ({
-      message: message.fragments
+      content: message.fragments
         .filter((fragment) => fragment.type === "text")
         .map((data) => (data as TextFragment).text)
         .join(" "),
-      sender: message.owner,
+      role: message.senderRole,
     }));
     setGenerating(true);
     io.emit("execute", { messages: emitData });
@@ -68,7 +68,7 @@ function App() {
 
   const demoMessageClickHandler = (message: string) => {
     const msg: Message = {
-      owner: "user",
+      senderRole: "user",
       fragments: [
         {
           type: "text",
@@ -107,7 +107,7 @@ function App() {
               hideDecision
               message={{
                 fragments: [{ type: "text", text: `${currentMessage} ...` }],
-                owner: "system",
+                senderRole: "system",
                 decision: [],
               }}
             />
@@ -130,7 +130,7 @@ function App() {
               if (e.code === "Enter") {
                 const data: Message = {
                   fragments: [{ type: "text", text: input }],
-                  owner: "user",
+                  senderRole: "user",
                   decision: [],
                 };
                 onClickHandler(data);
@@ -142,7 +142,7 @@ function App() {
             onClick={() => {
               const data: Message = {
                 fragments: [{ type: "text", text: input }],
-                owner: "user",
+                senderRole: "user",
                 decision: [],
               };
               onClickHandler(data);

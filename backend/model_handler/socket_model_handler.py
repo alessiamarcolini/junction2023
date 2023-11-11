@@ -26,7 +26,7 @@ class SocketModelHandler(ModelHandler):
         self.__sio.emit("finalize")
 
     def messages(self) -> List[str]:
-        return self.__execution["request"]
+        return self.__execution["request"]["messages"]
 
     def update_status_message(self, status: str) -> None:
         print(f"Updating status message {status}")

@@ -34,4 +34,5 @@ def disconnect():
 
 
 sio.connect("http://localhost:5001")
+# sio.connect("https://ecogen-botnet.apisc.host/")
 sio.wait()

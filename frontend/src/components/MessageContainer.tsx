@@ -15,11 +15,11 @@ export const MessageContainer = ({ message, hideDecision = false }: MessageConta
   return (
     <div
       className={`${
-        message.owner === "system" ? "justify-items-start" : "justify-items-end"
+        message.senderRole === "system" ? "justify-items-start" : "justify-items-end"
       } grid  h-fit w-full`}
     >
       <div className="flex items-end">
-        {message.owner === "system" && (
+        {message.senderRole === "system" && (
           <img
             className="w-10 h-10 aspect-square"
             src="https://ia.leadoo.com/upload/images/bot_icon/WTYxNb0TNUeTcKL9.png"
@@ -28,7 +28,7 @@ export const MessageContainer = ({ message, hideDecision = false }: MessageConta
         )}
         <div
           className={`${
-            message.owner === "system"
+            message.senderRole === "system"
               ? "bg-secondary-100 shadow-secondary-200 text-secondary-300 mr-16"
               : "bg-secondary-200 shadow-secondary-300 text-secondary-100 ml-16"
           } rounded-xl p-4 m-4 shadow-lg`}
@@ -49,7 +49,7 @@ export const MessageContainer = ({ message, hideDecision = false }: MessageConta
               </div>
             ),
           )}
-          {message.owner === "system" && !hideDecision && (
+          {message.senderRole === "system" && !hideDecision && (
             <button
               onClick={() => setShowModal(true)}
               className="text-secondary-300 rounded-xl border-2 border-secondary-300 hover:opacity-200 p-2 mt-4 text-xs"

@@ -8,8 +8,8 @@ def connect():
     sio.emit(
         "execute",
         [
-            {"owner": "system", "content": "Hello"},
-            {"owner": "user", "content": "World"},
+            {"role": "system", "content": "Hello"},
+            {"role": "user", "content": "World"},
         ],
     )
 

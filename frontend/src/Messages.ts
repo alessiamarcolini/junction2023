@@ -18,6 +18,6 @@ export type MessageFragment = TextFragment | ImageFragment;
 
 export type Message = {
   fragments: MessageFragment[];
-  owner: Sender;
+  senderRole: Sender;
   decision: string[];
 };

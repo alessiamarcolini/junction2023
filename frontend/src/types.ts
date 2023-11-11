@@ -1,8 +1,8 @@
 export type Sender = "system" | "user";
 
 export type Request = {
-  message: string;
-  sender: Sender;
+  content: string;
+  role: Sender;
 };
 
 export type Execution = {
