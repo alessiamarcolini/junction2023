@@ -3,6 +3,7 @@ from typing import Any, List, Optional, Dict, Union
 from typing_extensions import TypedDict, NotRequired, Literal
 import logging
 import copy
+import json
 
 # Custom packages
 from backend.model_handler.model_handler import ModelHandler
@@ -57,55 +58,148 @@ ENERGY PRICE FORECAST MODEL: Predicts energy prices up to
 STEEL PRICE FORECAST MODEL: Predicts steel alloy prices
 up to 6 months into the future.
 
-List ALL models applicable to the problem at hand. For Output,
-list ONLY THE MODELS. Also, you must argue in one sentence WHY
-YOU THINK THEY ARE RELEVANT in Reasong. [\INST]
+List ALL models applicable to the problem at hand. The Output
+should be a valid JSON string with the following keys:
+"models", "reasoning". "models" is simply a list of relevant models.
+In "reasoning", you must argue in one sentence WHY YOU THINK 
+THE MODELS YOU SELECTED ARE RELEVANT. [\INST]
 Here are some examples:
 
 Input: I want to know the price of purchasing steel in 6 weeks' time. Can you help me?
-Output: STEEL PRICE FORECAST MODEL
-Reasoning: Steel price directly impacts the purchase price.
+Output: {
+    "models": ["STEEL PRICE FORECAST MODEL"],
+    "reasoning": "Steel price directly impacts the purchase price."
+}
 </s>
 
 <s>
 Input: Do you know how much energy it takes to produce steel?
-Output: NONE
-Reasoning: The amount of energy required cannot be predicted by
-a price forecast model.
+Output: {
+    "models" : [],
+    "reasoning": "The amount of energy required cannot be predicted by
+a price forecast model."
+}
 </s>
 
 <s>
 Input: I want to know the energy costs for manufacturing steel in 6 weeks' time.
 Can you help me?
-Output: ENERGY PRICE FORECAST MODEL
-Reasoning: The energy price forecasting model directly predicts future energy costs.
+Output: {
+    "models": ["ENERGY PRICE MODEL"],
+    "reasoning": "The energy price forecasting model directly predicts future energy costs."
+}
 </s>
 
 <s>
 Input: I want to forecast the profit margin for producing steel for the next 2 months.
 Can you help me come up with an estimate?
-Output: ENERGY PRICE FORECAST MODEL, STEEL PRICE FORECAST MODEL
-Reasoning: To calculate the profit, you need both a steel price forecast (revenue) and
-an energy price forecast (cost).
+Output: {
+    "models": ["ENERGY PRICE FORECAST MODEL", "STEEL PRICE FORECAST MODEL"],
+    "reasoning": "To calculate the profit, you need both a steel price forecast (revenue) and
+an energy price forecast (cost)."
+}
 </s>
 
 <s>
 Input: I want to know the latest news about the steel industry. Can you summarize them
 for me please?
-Output: NONE
-Reasoning: The forecasting models cannot be used to predict the news, only prices.
+Output: {
+    "models" : [],
+    "reasoning": "The forecasting models cannot be used to predict the news, only prices."
+}
 </s>
 
 Input: """
 
-BREAKDOWN_PROMPT = """
-You are an assistant and your task is to break down tasks into
-smaller bits. Your output should contain ONLY THE SUB-TASKS with 
-each sub-task starting on a NEW LINE.
+BREAKDOWN_PROMPT_BEGIN = """<s>[INST]
+You are an assistant and your task is to break down complex tasks into
+a maximum of five smaller steps. Your output should be ONLY valid a JSON 
+string: A list with each element as dictionary defining a sub-task
 
-Here are some examples to help:
+Please incorporate ALL of the following models into your analysis and
+provide appropriate inputs to them using a dictionary with type and input
+parameters in JSON format:
+- LLM: Large language model for creative ideation and evaluation
+    Parameters:
+    - task (string): Prompt for the model.
+"""
 
+BREAKDOWN_ENERGY_MODEL = """
+- ENERGY_PRICE_MODEL: Predicts energy prices up to
+6 months into the future.
+    Parameters:
+    - months (float): Predict for this many months ahead from
+    the present.
+"""
 
+BREAKDOWN_STEEL_MODEL = """
+- STEEL PRICE FORECAST MODEL: Predicts steel alloy prices
+up to 6 months into the future.
+    Parameters:
+    - months (float): Predict for this many months ahead from
+    the present.
+    - alloy (string): Name of steel alloy to predict prices for.
+"""
+
+BREAKDOWN_PROMPT_BASIC = """[/INST]
+Here are some examples to help you:
+
+Input: How can I improve energy efficiency in steel manufacturing?
+Output: [
+    {
+    "type": "LLM",
+    "task": "Generate ideas for how to modernize equipment"
+    }, {
+    "type": "LLM",
+    "task": "Generate ideas for how to optimize processes (waste heat
+    management, energy management)"
+    }, {
+    "type": "LLM",
+    "task": "Generate ideas for how to raise awareness among staff"
+    }
+]
+</s>
+"""
+
+BREAKDOWN_ENERGY_PROMPT = """
+<s>
+Input: How can I improve my steel manufacturing company's profitability
+in the next 12 weeks?
+Output: [
+    {
+    "type": "LLM",
+    "task": "Generate ideas for how to optimize processes"
+    }, {
+    "type": "ENERGY_PRICE_MODEL",
+    "parameters": {
+        "months": 3.0
+    }
+    },
+    {
+    "type": "LLM",
+    "task": "Decide to purchase power in advance based on energy price model forecast"
+    }
+]
+</s>
+"""
+
+BREAKDOWN_STEEL_PROMPT = """
+<s>
+Input: Should I produce more of steel alloy 10B in the two weeks?
+Output: [
+    {
+    "type": "STEEL_PRICE_MODEL",
+    "parameters": {
+        "months": 0.5,
+        "alloy": "10B"
+    }
+    },
+    {
+    "type": "LLM",
+    "task": "Decide to produce more alloys based on steel price model forecast"
+    }
+]
+</s>
 """
 
 class PlannerModule(ModuleBase):
@@ -174,17 +268,79 @@ class PlannerModule(ModuleBase):
             responseText = filterResponse['choices'][0]['message']['content']
             logging.info(f"Filter response {i} generated: {responseText}")
 
+            try:
+                modelResponse = json.loads(responseText)
+            except ValueError:
+                logging.warn("Couldn't convert model recommendation to JSON. Retrying...")
+                continue
+
             # Stop generating when correct classification is achieved
             acceptableResponses = ["forecast model", "none"]
-            if any(word in responseText.lower() for word in acceptableResponses):
+            if any(word.lower() in acceptableResponses for word in modelResponse["models"]):
+                logging.info(f"Model recommendations valid. Recommendations: {modelResponse["models"]}")
                 break
         
         # Get models
-        modelNames = ["energy price forecast model", "steel price forecast model"]
-        models = [word in responseText.lower() for word in modelNames]
+        models = modelResponse["models"]
 
-        # Break down problem
+        # Load prompt in - again
+        messages = copy.deepcopy(handler.messages())
+        logging.info(f"Deciding on models to use for prompt: {messages[-1]["content"]}") 
+
+        # Create breakdown prompt based on applicable models
+        breakDownPrompt = BREAKDOWN_PROMPT_BEGIN
+        breakDownPrompt += BREAKDOWN_ENERGY_MODEL if "energy price forecast model" in models else breakDownPrompt
+        breakDownPrompt += BREAKDOWN_STEEL_MODEL if "steel price forecast model" in models else breakDownPrompt
+        breakDownPrompt += BREAKDOWN_PROMPT_BASIC
+        breakDownPrompt += BREAKDOWN_ENERGY_PROMPT if "energy price forecast model" in models else breakDownPrompt
+        breakDownPrompt += BREAKDOWN_STEEL_PROMPT if "steel price forecast model" in models else breakDownPrompt
+        breakDownPrompt += "Input: "
+        logging.info(f"Problem breakdown prompt: {breakDownPrompt}")
+        messages[-1]["content"] = breakDownPrompt + messages[-1]["content"]
 
         # Create orchestration plan
+        for i in range(self.__maxRetries):
+            filterResponse = self.__model.create_chat_completion(
+                messages,
+                max_tokens=128,
+                stream=self.stream,
+                temperature=self.temperature,
+            )
+            responseText = filterResponse['choices'][0]['message']['content']
+            logging.info(f"Filter response {i} generated: {responseText}")
+
+            try:
+                orchestrationResponse = json.loads(responseText)
+            except ValueError:
+                logging.warn("Couldn't conver orchestration llm response to JSON")
+                continue
+
+            # Validate output
+            for module in orchestrationResponse:
+                if module["type"].lower() == "llm":
+                    try:
+                        module["task"]
+                    except KeyError:
+                        logging.info("Orchestration definition does not contain task for llm. Retrying...")
+                        continue
+                
+                elif module["type"].lower == "steel_price_model":
+                    try:
+                        module["months"]
+                        module["alloy"]
+                    except KeyError:
+                        logging.info("Orchestration definition does not contain correct keys for steel price model. Retrying...")
+                        continue
+                
+                else:
+                    try:
+                        module["months"]
+                    except KeyError:
+                        logging.info("Orchestration definition does not contain correct keys for energy price model. Retrying...")
+                        continue
 
         # Return orchestration plan
+        logging.info("Orchestration plan created:")
+        logging.info(json.dumps(orchestrationResponse, indent=2))
+
+        return orchestrationResponse
