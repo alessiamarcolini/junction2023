@@ -51,9 +51,9 @@ export const MessageContainer = ({ message }: MessageContainerProps) => {
           {message.owner === "system" && (
             <button
               onClick={() => setShowModal(true)}
-              className="text-secondary-300 rounded-xl border-2 border-secondary-300 hover:opacity-200 p-2 text-xs"
+              className="text-secondary-300 rounded-xl border-2 border-secondary-300 hover:opacity-200 p-2 mt-4 text-xs"
             >
-              Show decision
+              Show thought process
             </button>
           )}
         </div>

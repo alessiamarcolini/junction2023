@@ -1,8 +1,8 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Message, TextFragment } from "./Messages";
 import { MessageContainer } from "./components/MessageContainer";
 import { Spinner } from "./components/Spinner";
-import { SocketContext, useSocket, useSocketEvent } from "./hooks/useSocket";
+import { useSocket, useSocketEvent } from "./hooks/useSocket";
 
 function App() {
   const [input, setInput] = useState<string>("");
