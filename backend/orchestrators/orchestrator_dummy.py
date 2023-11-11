@@ -21,14 +21,14 @@ class Orchestrator(OrchestratorBase):
 
         time.sleep(2)
         handler.update_status_message(None)
-        handler.update_progress_bar(None)
+        handler.update_progress_bar(-1)
         handler.send_debug_thoughts("If you would be as smart as me you would know this")
 
         handler.send_text("Hello world")
         time.sleep(2)
         handler.send_image("https://i.imgur.com/2X2IDEA.jpeg")
         time.sleep(2)
-        for i in range(100):
+        for i in range(10):
             handler.send_text("Hello world")
             time.sleep(1)
         time.sleep(2)
