@@ -9,7 +9,7 @@ import json
 from model_handler.model_handler import ModelHandler
 from .module_base import ModuleBase
 import config as cfg
-from custom_types.orchestration_types import ExecutionReturn, OrhestrationPlan
+from custom_types.orchestration_types import ExecutionReturn, OrchestrationPlan
 
 # 3rd party packages
 from llama_cpp import Llama
