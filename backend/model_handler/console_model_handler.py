@@ -3,10 +3,7 @@ from typing import Union
 import uuid
 
 from model_handler.model_handler import ModelHandler
-
-
-from backend.model_handler.model_handler import ModelHandler
-from backend.types.message_types import ChatCompletionRequestMessage, ChatCompletionRequestUserMessage
+from custom_types.message_types import ChatCompletionRequestMessage, ChatCompletionRequestUserMessage
 
 class ConsoleModelHandler(ModelHandler):
     def __init__(self):
