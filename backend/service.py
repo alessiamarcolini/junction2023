@@ -12,6 +12,12 @@ def routes(sio):
     def connect(sid, environ):
         print("connect ", sid)
 
+    @sio.on("execute")
+    def execute(sid, execution):
+        print(execution)
+        sio.emit("started", execution, room=sid)
+        sio.emit("finalize", execution, room=sid)
+
     pass
 
 
@@ -21,7 +27,7 @@ def main():
     routes(sio)
 
     if __name__ == "__main__":
-        eventlet.wsgi.server(eventlet.listen(("", 5000)), app)
+        eventlet.wsgi.server(eventlet.listen(("", 5001)), app)
 
 
 main()
