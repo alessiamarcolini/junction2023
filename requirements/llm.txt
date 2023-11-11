@@ -1,7 +1,8 @@
 llama-cpp-python
-python
 typing-extensions
 python-socketio
 eventlet
 langchain
 numpy
+pandas
+sklearn

@@ -15,7 +15,7 @@ import numpy as np
 
 class Orchestrator(OrchestratorBase):
     def __init__(self):
-        Super().__init__()
+        super().__init__()
     
     def execute(self, handler: ModelHandler) -> None:
         handler.update_status_message("Thinking...")
