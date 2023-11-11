@@ -1,58 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import { Message } from "./Messages";
+import { useContext, useEffect, useRef, useState } from "react";
+import { Message, TextFragment } from "./Messages";
 import { MessageContainer } from "./components/MessageContainer";
 import { Spinner } from "./components/Spinner";
+import { SocketContext, useSocket, useSocketEvent } from "./hooks/useSocket";
 
 function App() {
   const [input, setInput] = useState<string>("");
   const messagesEnd = useRef<HTMLDivElement | null>(null);
-  const messages: Message[] = [
-    {
-      fragments: [
-        {
-          type: "text",
-          text: "This is a very nice response",
-        },
-      ],
-      owner: "user",
-    },
-    {
-      fragments: [
-        {
-          type: "text",
-          text: "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).",
-        },
-        {
-          type: "image",
-          src: "https://cdn.builtin.com/sites/www.builtin.com/files/styles/ckeditor_optimize/public/inline-images/2_boxplots.jpg",
-        },
-        {
-          type: "text",
-          text: "This is a very nice text message",
-        },
-      ],
-      owner: "bot",
-      decision: "yolo",
-    },
-    {
-      fragments: [
-        {
-          type: "text",
-          text: "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).",
-        },
-        {
-          type: "image",
-          src: "https://www.shareicon.net/data/2017/03/07/880593_media_512x512.png",
-        },
-        {
-          type: "text",
-          text: "This is a very nice text message",
-        },
-      ],
-      owner: "bot",
-      decision: "yolo again",
-    },
-  ];
   const [messageHistory, setMessageHistory] = useState<Message[]>([]);
 
   const scrollToBottom = () => {
@@ -60,6 +14,26 @@ function App() {
   };
 
   useEffect(() => scrollToBottom(), [messageHistory]);
+
+  const io = useSocket();
+  useSocketEvent("connect", () => console.log("reeeeeeeeee"));
+
+  const onClickHandler = () => {
+    const data: Message = {
+      fragments: [{ type: "text", text: input }],
+      owner: "user",
+    };
+    const newHistory = [...messageHistory, data];
+    setMessageHistory(newHistory);
+    const emitData = newHistory.map((message) => ({
+      message: message.fragments
+        .filter((fragment) => fragment.type === "text")
+        .map((data) => (data as TextFragment).text)
+        .join(" "),
+      sender: message.owner,
+    }));
+    io.emit("execute", { messages: emitData });
+  };
 
   return (
     <div className="text-secondary-300 bg-secondary-300 w-full grid justify-items-center h-screen">
@@ -84,13 +58,7 @@ function App() {
           />
           <button
             disabled={input.length === 0}
-            onClick={() => {
-              const data: Message = {
-                fragments: [{ type: "text", text: input }],
-                owner: "user",
-              };
-              setMessageHistory([...messageHistory, data]);
-            }}
+            onClick={() => onClickHandler()}
             className="bg-secondary-200 min-w-[80px] rounded-lg h-full border-2 border-secondary-200 p-4 text-center duration-200 hover:bg-secondary-100 disabled:bg-secondary-300 disabled:border-secondary-200 disabled:text-secondary-200"
           >
             Send
