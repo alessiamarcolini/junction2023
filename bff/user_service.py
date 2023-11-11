@@ -1,7 +1,8 @@
 from queue import Queue
 
-import eventlet
 import socketio
+from executor_service import request_execution
+from socket_wrapper import SocketWrapper
 
 STATIC_FILES = {
     "/": "../frontend/build/index.html",
@@ -12,14 +13,18 @@ STATIC_FILES = {
 def routes(sio):
     @sio.on("connect")
     def connect(sid, environ):
-        print("connect ", sid)
+        print(f"User {sid} connected")
 
+    @sio.event
     def execute(sid, messages):
-        print("execute ")
+        print(f"User requested execution {messages} ")
+        user_sio = SocketWrapper(sio, sid)
+        request_execution(messages, user_sio)
 
     pass
 
 
 sio = socketio.Server(cors_allowed_origins="*")
 app = socketio.WSGIApp(sio, static_files=STATIC_FILES)
+
 routes(sio)

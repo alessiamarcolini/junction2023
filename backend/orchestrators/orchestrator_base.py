@@ -1,10 +1,10 @@
-from backend.orchestrators.model_handler import ModelHandler
+from model_handler.model_handler import ModelHandler
 
 
 class OrchestratorBase:
     def __init__(self):
         self.models = {}
-        self.planner = PlannerModule(args...)
+        # self.planner = PlannerModule(args...)
 
     def execute(self, handler: ModelHandler):
         pass
