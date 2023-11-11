@@ -1,5 +1,15 @@
-from .module_base import ModuleBase
+# Base packages
+import copy
+import json
 
+# Custom packages
+from .module_base import ModuleBase
+from model_handler.model_handler import ModelHandler
+from custom_types.orchestration_types import ExecutionReturn
+import config as cfg
+import logging
+
+# 3rd party packages
 from llama_cpp import Llama
 from langchain.prompts import PromptTemplate
 
@@ -42,7 +52,7 @@ Output:{{
 }}
 </s>
 
-Input: {userRequest}
+Input: {userPrompt}
 Output: 
 """
 
@@ -94,6 +104,7 @@ class TimeModule(ModuleBase):
             try:
                 estimatedTime = int(timeResponse["days"])
                 timeResponse["reasoning"]
+                break
             except ValueError as e:
                 logging.info(f"Exception encountered when validating JSON contents: {e}")
             except KeyError as e:
