@@ -1,5 +1,8 @@
-from .model_handler import ModelHandler
+from backend.model_handler.model_handler import ModelHandler
+from backend.types.message_types import ChatCompletionRequestMessage, ChatCompletionRequestUserMessage
 
+from typing import Any, List, Optional, Dict, Union
+from typing_extensions import TypedDict, NotRequired, Literal
 
 class ConsoleModelHandler(ModelHandler):
     def __init__(self):
@@ -17,10 +20,14 @@ class ConsoleModelHandler(ModelHandler):
         self.__finalized = True
         print("Final output sent")
 
-    def messages(self) -> List[str]:
+    def messages(self) -> List[ChatCompletionRequestMessage]:
         if self.__messages is None:
-            self.__messages = [input("Enter prompt: ")]
-        print(self.__messages)
+            logging.info("No messages found! Asking for message...")
+            self.__messages : List[ChatCompletionRequestUserMessage] = [{
+                "role":"user",
+                "content":input("Please type an input prompt: ")
+            }]
+        logging.info(f"Current messages: {self.__messages}")
         return self.__messages
 
     def update_status_message(self, status: str) -> None:
