@@ -52,6 +52,14 @@ Output:{{
 }}
 </s>
 
+<s>
+Input: What is the price of steel, is it cheap or is it expensive?
+Output:{{
+    "reasoning": "The requested information can not be used as a time reference. Thus, I can not extract a time reference from the request.",
+    "days": null
+}}
+</s>
+
 Input: {userPrompt}
 Output: 
 """
@@ -109,6 +117,10 @@ class TimeModule(ModuleBase):
                 logging.info(f"Exception encountered when validating JSON contents: {e}")
             except KeyError as e:
                 logging.info(f"Generated response did not have all required keys: {e}")
+            except TypeError as e:
+                logging.info(f"Generated response did not have required type: {e}")
+                if timeResponse["days"] is None:
+                    return timeResponse
 
             
             logging.info(f"Invalid time estimation model response. Retrying ... ({i}/{self.__maxRetries})")
@@ -118,4 +130,4 @@ class TimeModule(ModuleBase):
         
         # Return: Question not relevant
         handler.send_debug_thoughts(timeResponse["reasoning"])
-        return timeResponse["days"]
+        return timeResponse

@@ -14,10 +14,11 @@ from modules.module_explainer import ExplainerModule
 # 3rd party packages
 import numpy as np
 
+
 class Orchestrator(OrchestratorBase):
     def __init__(self):
         super().__init__()
-    
+
     def execute(self, handler: ModelHandler) -> None:
         handler.update_status_message("Thinking...")
         planner = PlannerModule(
@@ -49,11 +50,24 @@ class Orchestrator(OrchestratorBase):
         logging.info(f"Explaining model output using models: {models}")
 
         # Get timeline for predictions
-        days = TimeModule(
+        tm_response = TimeModule(
             modelName="mistral-7B-instruct"
         ).execute(handler=handler)
 
+        if tm_response["days"] is None:
+            handler.update_progress_bar(50)
+            DenyModule(
+                modelName="mistral-7B-instruct"
+            ).execute(
+                handler=handler,
+                reason="no_time"
+            )
+            handler.update_progress_bar(100)
+            handler.update_status_message("Done!")
+            handler.finalize()
+            return
         # Convert days to months and round days/months
+        days = tm_response["days"]
         months = int(np.ceil(days/30))
         days = int(np.ceil(days))
 
@@ -63,7 +77,8 @@ class Orchestrator(OrchestratorBase):
             "steel": {"text": ""}
         }
         if "ENERGY PRICE FORECAST MODEL" in models:
-            handler.update_status_message(f"Running energy forecast for {days} days...")
+            handler.update_status_message(
+                f"Running energy forecast for {days} days...")
             logging.info(f"Running energy forecast for {days} days")
             energyPredictions, energyPlot = EnergyModule().execute(horizon=days)
 
@@ -71,9 +86,10 @@ class Orchestrator(OrchestratorBase):
                 "text": energyPredictions,
                 "plot": energyPlot
             }
-        
+
         if "STEEL PRICE FORECAST MODEL" in models:
-            handler.update_status_message(f"Running steel forecast for {months} months...")
+            handler.update_status_message(
+                f"Running steel forecast for {months} months...")
             logging.info(f"Running steel forecast for {months} months")
             steelPredictions, steelPlot = SteelModule(
                 model_name="Steel"
@@ -96,5 +112,3 @@ class Orchestrator(OrchestratorBase):
         handler.update_progress_bar(100)
         handler.update_status_message("Done!")
         handler.finalize()
-        
-            

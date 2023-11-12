@@ -59,6 +59,7 @@ class Executor:
                 "text_received", {"id": self.execution["id"], "text": data[0]}
             )
         elif event == "send_debug_thought":
+            print(f"Executor({self.executor_sio.sid}) Recieved debug thought {data[0]}")
             self.user_sio.emit(
                 "debug_thought_received",
                 {"id": self.execution["id"], "text": data[0]},
@@ -84,6 +85,7 @@ class Executor:
         elif event == "update_status_message":
             self.execution["status"] = data[0] if len(data) > 0 else None
             self.user_sio.emit("execution_updated", self.execution)
+
         elif event == "update_status_progress":
             self.execution["progress"] = data[0] if len(data) > 0 else None
             self.user_sio.emit("execution_updated", self.execution)

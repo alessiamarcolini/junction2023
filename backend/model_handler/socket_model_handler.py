@@ -40,5 +40,6 @@ class SocketModelHandler(ModelHandler):
         self.__sio.emit("update_status_progress", progress)
 
     def send_debug_thoughts(self, thought: str) -> None:
+        print(f"Sending debug thought {thought}")
         self.__sio.emit("send_debug_thought", thought)
         pass
