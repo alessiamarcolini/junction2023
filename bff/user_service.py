@@ -1,5 +1,3 @@
-from queue import Queue
-
 import socketio
 from executor_service import request_execution
 from socket_wrapper import SocketWrapper
