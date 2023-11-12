@@ -156,7 +156,7 @@ function App() {
             value={input}
             disabled={generating}
             onKeyDown={(e) => {
-              if (e.code === "Enter") {
+              if (e.code === "Enter" && input.length > 0) {
                 const data: Message = {
                   fragments: [{ type: "text", text: input }],
                   senderRole: "user",
