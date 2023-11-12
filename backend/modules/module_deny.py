@@ -73,9 +73,26 @@ Input: {userPrompt}
 Output: 
 """
 
+
+DENY_NO_TIME_PROMPT = """<s>[INST]
+You are an AI assistant specializing in energy price and steel price forecasting.
+Unfortunately, you couldn't fulfil a user request if they did not provide the date or time range for the data theze are courious.
+If the time is not provided POLITELY DECLINE the user's request stating the REASONS for doing 
+so and suggest they ask you about energy and steel prices for a specific time.
+[/INST]
+
+Input: I am interested in knowing more about patents in the steel industry. Can you help me with that?
+Output: Unfortunately, I do not understand the time range you are interested in. Please provide me a hint about it.
+</s>
+
+Input: {userPrompt}
+Output: 
+"""
+
 TEMPLATES = {
     "irrelevant": DENY_IRRELEVANT_PROMPT,
-    "no_model": DENY_NO_MODEL_PROMPT
+    "no_model": DENY_NO_MODEL_PROMPT,
+    "no_time": DENY_NO_TIME_PROMPT ,
 }
 
 class DenyModule(ModuleBase):
