@@ -54,8 +54,8 @@ class Orchestrator(OrchestratorBase):
         ).execute(handler=handler)
 
         # Convert days to months and round days/months
-        months = np.ceil(days/30)
-        days = np.ceil(days)
+        months = int(np.ceil(days/30))
+        days = int(np.ceil(days))
 
         # Call-out to energy module relevant modules
         moduleResults = {
