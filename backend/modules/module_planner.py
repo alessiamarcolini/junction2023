@@ -19,39 +19,58 @@ DENY_PROMPT = """<s>[INST]
 You are an assistant filtering inputs for further processing.
 IF THE PROBLEM IS RELATED TO THE STEEL INDUSTRY OR ENERGY PRICES in any way,
 you need to pass on the output for further processing. If the prompt is too
-generic, please DECLINE the request. In all cases, only generate one word: 
-"PASS" or "DECLINE" for the request. RETURN ONLY ONE WORD.
+generic, please DECLINE the request. In all cases, generated a valid JSON
+string with keys "reasoning" that justifies your "decision" (other key)
+to DECLINE or PASS the request further.
 [\INST]
 
 Here are some examples:
 
 Input: Can you generate some images of cats?
-Output: DECLINE
+Output: {{
+    "reasoning": "Generating images of cats is not related to the steel industry or energy prices.",
+    "decision": "DECLINE"
+}}
 </s>
 
 <s>
 Input: I want to know the price of steel in 3 months.
-Output: PASS
+Output: {{
+    "reasoning": "Wanting to know the price of steel in three months is related to the steel industry.",
+    "decision": "PASS"
+}}
 </s>
 
 <s>
 Input: How much energy does steel processing consume? Can you forecast factors influencing energy prices in the near future?
-Output: PASS
+Output: {{
+    "reasoning": "The first question is related to the steel industry, the second question is related to energy prices.",
+    "decision": "PASS"
+}}
 </s>
 
 <s>
 Input: Can you help me generate some python code to print to the console?
-Output: DECLINE
+Output: {{
+    "reasoning": "Generating python code is not related to the steel industry or energy prices.",
+    "decision": "DECLINE"
+}}
 </s>
 
 <s>
 Input: Hello! How are you doing?
-Output: DECLINE
+Output: {{
+    "reasoning": "This is a generic greeting, not related to the steel industry or energy prices.",
+    "decision": "DECLINE"
+}}
 </s>
 
 <s>
 Input: Hey! This is a great question.
-Output: DECLINE
+Output: {{
+    "reasoning": "This is a generic greeting, not related to the steel industry or energy prices.",
+    "decision": "DECLINE"
+}}
 </s>
 
 Input: {userPrompt}
@@ -157,17 +176,25 @@ class PlannerModule(ModuleBase):
             responseText = filterResponse['choices'][0]['message']['content']
             logging.info(f"Deny/accept response {i} generated: {responseText}")
 
-            if any(word in responseText.lower() for word in ["pass", "decline"]):
-                logging.info(f"Correct deny/accept response generated")
-                break
+            try:
+                denyResponse = json.loads(responseText)
+            except json.decoder.JSONDecodeError:
+                logging.warn(f"Model generated invalid JSON: {responseText}")
+                continue
 
-            logging.info(
-                f"Invalid deny/accept response. Retrying ... ({i}/{self.__maxRetries})")
-
-            if i + 1 == self.__maxRetries:
-                raise RuntimeError("No usable response from LLM model")
+            try:
+                # Stop generating when correct classification is achieved
+                VALID_DECISIONS = ["DECLINE", "PASS"]
+                if denyResponse["decision"] in VALID_DECISIONS:
+                    logging.info(
+                        f"Deny/accept response valid. Response: {json.dumps(denyResponse, indent=2)}")
+                    break
+            except Exception as e:
+                logging.info(
+                    f"Exception encountered when validating JSON contents: {e}")
 
         # Return: Question not relevant
+        handler.send_debug_thoughts(denyResponse["reasoning"])
         if "decline" in responseText.lower():
             return {
                 "orchestrationPlan": {

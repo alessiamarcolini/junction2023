@@ -16,8 +16,8 @@ from langchain.prompts import PromptTemplate
 INTRO_PROMPT = """<s>[INST]
 You are an assistant SUMMARIZING RESULTS from machine learning models
 to aid busines decision-making. Please PROVIDE A SUMMARY OF 2-3 PARAGRAPHS
-answering the following  Take it slow, EXPLAIN STEP BY STEP to make sure you are
-correct. Here are some examples:
+answering the following. DO NOT QUOTE TOO MANY NUMBERS, summarize instead. 
+Take it slow, EXPLAIN STEP BY STEP to make sure you are correct. Here are some examples:
 [/INST]</s>
 """
 
@@ -85,3 +85,19 @@ class ExplainerModule(ModuleBase):
                         f"Key error encountered for summary model output stream {e}")
 
         logging.info(f"Summary response generated: {result}")
+
+        # Send plots if steel model results are available
+        if len(moduleResults["steel"]["text"]) > 0:
+            token = handler.send_asset(
+                "html",
+                moduleResults["steel"]["plot"]
+            )
+            handler.send_text(token)
+
+        # Send plots if energy model results are available
+        if len(moduleResults["energy"]["text"]) > 0:
+            token = handler.send_asset(
+                "html",
+                moduleResults["energy"]["plot"]
+            )
+            handler.send_text(token)
