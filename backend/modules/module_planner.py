@@ -18,9 +18,9 @@ from langchain.prompts import PromptTemplate
 DENY_PROMPT = """<s>[INST]
 You are an assistant filtering inputs for further processing.
 IF THE PROBLEM IS RELATED TO THE STEEL INDUSTRY OR ENERGY PRICES in any way,
-you need to pass on the output for further processing. In these cases,
-only generate one word: "PASS". Otherwise, you need to return the
-word "DECLINE" for the request. RETURN ONLY ONE WORD.
+you need to pass on the output for further processing. If the prompt is too
+generic, please DECLINE the request. In all cases, only generate one word: 
+"PASS" or "DECLINE" for the request. RETURN ONLY ONE WORD.
 [\INST]
 
 Here are some examples:
@@ -41,6 +41,16 @@ Output: PASS
 
 <s>
 Input: Can you help me generate some python code to print to the console?
+Output: DECLINE
+</s>
+
+<s>
+Input: Hello! How are you doing?
+Output: DECLINE
+</s>
+
+<s>
+Input: Hey! This is a great question.
 Output: DECLINE
 </s>
 
@@ -105,9 +115,10 @@ Output: {{
 Input: {userPrompt}
 Output: """
 
+
 class PlannerModule(ModuleBase):
-    def __init__(self, 
-        modelName: str = "mistral-7B-instruct"):
+    def __init__(self,
+                 modelName: str = "mistral-7B-instruct"):
         super().__init__()
         self.maxOutputTokens = 2048
         self.temperature = 0.2
@@ -117,7 +128,8 @@ class PlannerModule(ModuleBase):
         self.modelName = modelName
         self.stream = False
         self.__maxRetries = 3
-        self.__model = Llama(model_path=cfg.models[modelName], n_gpu_layers=128, n_ctx=self.maxOutputTokens)
+        self.__model = Llama(
+            model_path=cfg.models[modelName], n_gpu_layers=128, n_ctx=self.maxOutputTokens)
 
         logging.info(f"Initialized planner model {modelName}")
 
@@ -128,7 +140,8 @@ class PlannerModule(ModuleBase):
         tempMessages = copy.deepcopy(messages)
 
         # Get latest prompt + respond
-        denyPrompt = PromptTemplate(template=DENY_PROMPT, input_variables=["userPrompt"])
+        denyPrompt = PromptTemplate(
+            template=DENY_PROMPT, input_variables=["userPrompt"])
         denyPrompt = denyPrompt.format(userPrompt=messages[-1]["content"])
         logging.info(f"Prompting model with: {denyPrompt}")
         tempMessages[-1]["content"] = denyPrompt
@@ -147,12 +160,13 @@ class PlannerModule(ModuleBase):
             if any(word in responseText.lower() for word in ["pass", "decline"]):
                 logging.info(f"Correct deny/accept response generated")
                 break
-            
-            logging.info(f"Invalid deny/accept response. Retrying ... ({i}/{self.__maxRetries})")
+
+            logging.info(
+                f"Invalid deny/accept response. Retrying ... ({i}/{self.__maxRetries})")
 
             if i + 1 == self.__maxRetries:
                 raise RuntimeError("No usable response from LLM model")
-        
+
         # Return: Question not relevant
         if "decline" in responseText.lower():
             return {
@@ -163,14 +177,14 @@ class PlannerModule(ModuleBase):
                 "messages": messages,
             }
 
-
         # Task 2 - what models to use?
         logging.info("Executing model selector prompt")
         self.__modelHandler = handler
         tempMessages = copy.deepcopy(messages)
 
         # Create new prompt
-        modelPrompt = PromptTemplate(template=MODEL_PROMPT, input_variables=["userPrompt"])
+        modelPrompt = PromptTemplate(
+            template=MODEL_PROMPT, input_variables=["userPrompt"])
         modelPrompt = modelPrompt.format(userPrompt=messages[-1]["content"])
         logging.info(f"Prompting model with: {modelPrompt}")
         tempMessages[-1]["content"] = modelPrompt
@@ -183,8 +197,9 @@ class PlannerModule(ModuleBase):
                 temperature=self.temperature,
             )
             responseText = filterResponse['choices'][0]['message']['content']
-            logging.info(f"Model filter response {i} generated: {responseText}")
-            
+            logging.info(
+                f"Model filter response {i} generated: {responseText}")
+
             try:
                 modelResponse = json.loads(responseText)
             except json.decoder.JSONDecodeError:
@@ -193,17 +208,21 @@ class PlannerModule(ModuleBase):
 
             try:
                 # Stop generating when correct classification is achieved
-                VALID_MODELS = ["ENERGY PRICE FORECAST MODEL", "STEEL PRICE FORECAST MODEL"]
+                VALID_MODELS = ["ENERGY PRICE FORECAST MODEL",
+                                "STEEL PRICE FORECAST MODEL"]
                 if all(word in VALID_MODELS for word in modelResponse["models"]):
-                    logging.info(f"Model recommendations valid. Recommendations: {json.dumps(modelResponse, indent=2)}")
+                    logging.info(
+                        f"Model recommendations valid. Recommendations: {json.dumps(modelResponse, indent=2)}")
                     break
             except Exception as e:
-                logging.info(f"Exception encountered when validating JSON contents: {e}")
+                logging.info(
+                    f"Exception encountered when validating JSON contents: {e}")
 
             if i + 1 == self.__maxRetries:
                 raise RuntimeError("No usable response from LLM model")
 
         # Return output based on model use recommendations
+        handler.send_debug_thoughts(modelResponse["reasoning"])
         if len(modelResponse["models"]) >= 1:
             return {
                 "orchestrationPlan": {
@@ -213,7 +232,7 @@ class PlannerModule(ModuleBase):
                 },
                 "messages": messages,
             }
-        
+
         return {
             "orchestrationPlan": {
                 "goal": "deny",
