@@ -64,9 +64,10 @@ Input: {userPrompt}
 Output: 
 """
 
+
 class TimeModule(ModuleBase):
-    def __init__(self, 
-        modelName: str = "mistral-7B-instruct"):
+    def __init__(self,
+                 modelName: str = "mistral-7B-instruct"):
         super().__init__()
         self.maxOutputTokens = 1024
         self.temperature = 0.2
@@ -76,10 +77,11 @@ class TimeModule(ModuleBase):
         self.modelName = modelName
         self.stream = False
         self.__maxRetries = 3
-        self.__model = Llama(model_path=cfg.models[modelName], n_gpu_layers=128, n_ctx=self.maxOutputTokens)
+        self.__model = Llama(
+            model_path=cfg.models[modelName], n_gpu_layers=128, n_ctx=self.maxOutputTokens)
 
         logging.info(f"Initialized time model {modelName}")
-    
+
     def execute(self, handler: ModelHandler) -> float:
         logging.info("Executing time function")
         self.__modelHandler = handler
@@ -87,7 +89,8 @@ class TimeModule(ModuleBase):
         tempMessages = copy.deepcopy(messages)
 
         # Get latest prompt + respond
-        timePrompt = PromptTemplate(template=TIME_PROMPT, input_variables=["userPrompt"])
+        timePrompt = PromptTemplate(
+            template=TIME_PROMPT, input_variables=["userPrompt"])
         timePrompt = timePrompt.format(userPrompt=messages[-1]["content"])
         logging.info(f"Prompting time extraction model with: {timePrompt}")
         tempMessages[-1]["content"] = timePrompt
@@ -101,12 +104,14 @@ class TimeModule(ModuleBase):
                 temperature=self.temperature,
             )
             responseText = filterResponse['choices'][0]['message']['content']
-            logging.info(f"Time estimation response {i} generated: {responseText}")
+            logging.info(
+                f"Time estimation response {i} generated: {responseText}")
 
             try:
                 timeResponse = json.loads(responseText)
             except json.decoder.JSONDecodeError:
-                logging.warn(f"Time estimation model generated invalid JSON: {responseText}")
+                logging.warn(
+                    f"Time estimation model generated invalid JSON: {responseText}")
                 continue
 
             try:
@@ -114,20 +119,24 @@ class TimeModule(ModuleBase):
                 timeResponse["reasoning"]
                 break
             except ValueError as e:
-                logging.info(f"Exception encountered when validating JSON contents: {e}")
+                logging.info(
+                    f"Exception encountered when validating JSON contents: {e}")
             except KeyError as e:
-                logging.info(f"Generated response did not have all required keys: {e}")
+                logging.info(
+                    f"Generated response did not have all required keys: {e}")
             except TypeError as e:
-                logging.info(f"Generated response did not have required type: {e}")
+                logging.info(
+                    f"Generated response did not have required type: {e}")
                 if timeResponse["days"] is None:
+                    handler.send_debug_thoughts(timeResponse["reasoning"])
                     return timeResponse
 
-            
-            logging.info(f"Invalid time estimation model response. Retrying ... ({i}/{self.__maxRetries})")
+            logging.info(
+                f"Invalid time estimation model response. Retrying ... ({i}/{self.__maxRetries})")
 
             if i + 1 == self.__maxRetries:
                 raise RuntimeError("No usable response from LLM model")
-        
+
         # Return: Question not relevant
         handler.send_debug_thoughts(timeResponse["reasoning"])
         return timeResponse

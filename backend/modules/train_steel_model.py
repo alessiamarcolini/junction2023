@@ -1,4 +1,9 @@
+from bokeh.plotting import figure, show
+from bokeh.palettes import Category10
+from bokeh.models import ColumnDataSource, HoverTool
+from bokeh.layouts import column
 from datetime import datetime
+import logging
 
 import numpy as np
 import pandas as pd
@@ -137,14 +142,15 @@ def formulate_explanation_string(
 
     data_explanation = ""
     data_explanation += (
-        f"The model made the following predictions for the next {horizon} months:"
-    )
+        f"The model made the following predictions for the next {horizon} months:")
     data_explanation += zip_string(pred_dates, predictions)
     data_explanation += "\n"
 
-    data_explanation += f"The previous {horizon} months had the following values:"
+    data_explanation += (
+        f"The previous {horizon} months had the following values:")
     data_explanation += zip_string(
-        np.array(last_label_data.iloc[:, 0]), np.array(last_label_data.iloc[:, 1])
+        np.array(last_label_data.iloc[:, 0]), np.array(
+            last_label_data.iloc[:, 1])
     )
     data_explanation += "\n"
 
@@ -164,33 +170,23 @@ def formulate_explanation_string(
     return data_explanation
 
 
-from datetime import datetime
-
-import pandas as pd
-from bokeh.embed import file_html
-from bokeh.layouts import column
-from bokeh.models import ColumnDataSource, HoverTool
-from bokeh.palettes import Category10
-from bokeh.plotting import figure, show
-from bokeh.resources import CDN
-
-
 def create_forecast_plot(past_df, predictions, past_target_col="Germany_steel_index"):
     # Sample Data
     past_data = {
         "time": np.array(past_df["time"]),
-        "Germany_steel_index": np.array(past_df[past_target_col]),
+        "Germany_steel_index": np.array(past_df[past_target_col]).tolist(),
     }
     last_date = str(past_df["time"].max())
     print(last_date)
     forecast_data = {
-        "time": generate_upcoming_months(last_date, 3),
-        "Germany_steel_index": predictions,
+        "time": generate_upcoming_months(last_date, len(predictions.tolist())),
+        "Germany_steel_index": predictions.tolist(),
     }
 
     # past_df = pd.DataFrame(past_data)
     past_df = past_df.tail(11)
     past_df["time"] = pd.to_datetime(past_df["time"])
+    logging.info(forecast_data)
     forecast_df = pd.DataFrame(forecast_data)
     forecast_df["time"] = pd.to_datetime(forecast_df["time"])
     # Create Bokeh plot
@@ -256,7 +252,8 @@ def create_forecast_plot(past_df, predictions, past_target_col="Germany_steel_in
 
     # Add hover tool
     hover = HoverTool()
-    hover.tooltips = [("time", "@time{%F}"), ("Index Value", "@Germany_steel_index")]
+    hover.tooltips = [("time", "@time{%F}"),
+                      ("Index Value", "@Germany_steel_index")]
     hover.formatters = {"@time": "datetime"}
     p.add_tools(hover)
 
