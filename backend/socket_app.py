@@ -1,3 +1,4 @@
+import traceback
 import sys
 
 import socketio
@@ -23,7 +24,8 @@ def execute(data):
     try:
         orchestrator.execute(handler)
     except Exception as e:
-        print(f"Error occured\n{e}")
+        print(f"Error occured s{type(e)}")
+        traceback.print_exc()
         handler.send_text("<asset:error:>")
         handler.finalize()
     finally:
