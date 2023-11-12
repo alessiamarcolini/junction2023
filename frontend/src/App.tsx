@@ -27,12 +27,14 @@ function App() {
 
   const io = useSocket();
   useSocketEvent("connect", () => console.log("reeeeeeeeee"));
-  useSocketEvent("execution_created", (execution: Execution) =>
+  useSocketEvent("execution_created", (execution: Execution) => {
     setExecutionState(execution),
-  );
-  useSocketEvent("execution_updated", (execution: Execution) =>
+    console.log("execution created", execution)
+  });
+  useSocketEvent("execution_updated", (execution: Execution) => {
     setExecutionState(execution),
-  );
+    console.log("execution updated", execution)
+  });
   useSocketEvent("text_received", (message: TextReceivedEvent) => {
     setAssets((assets) => {
       const regex = "^<asset:.*";
@@ -76,9 +78,10 @@ function App() {
       return [...assets.slice(0, -1), fragment];
     });
   });
-  useSocketEvent("debug_thought_received", (message: TextReceivedEvent) =>
+  useSocketEvent("debug_thought_received", (message: TextReceivedEvent) => {
     setDecision((current) => [...current, message.text]),
-  );
+    console.log("debug thought received", message)
+  });
 
   useSocketEvent("finalize", () => {
     setMessageHistory([
@@ -92,6 +95,7 @@ function App() {
     setDecision([]);
     setAssets([]);
     setGenerating(false);
+    console.log("finalize", executionState)
   });
 
   const onClickHandler = (message: Message) => {
@@ -169,7 +173,7 @@ function App() {
                   (m) => m.senderRole === "user",
                 );
                 if (userData.length > 0) {
-                  setInput(userData[userData.length - 1].fragments[0].text);
+                  setInput((userData[userData.length - 1].fragments[0] as TextFragment).text);
                 }
               }
             }}
