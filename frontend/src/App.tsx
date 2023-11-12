@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Message,
-  MessageFragment,
-  TextFragment
-} from "./Messages";
+import { Message, MessageFragment, TextFragment } from "./Messages";
 import DemoDiscussions from "./components/DemoDiscussions";
 import InProgressContainer from "./components/InProgressContainer";
 import { MessageContainer } from "./components/MessageContainer";
@@ -66,8 +62,8 @@ function App() {
             ...assets,
             {
               type: "error",
-            }
-          ]
+            },
+          ];
         }
       }
       if (assets.length === 0 || assets[assets.length - 1].type !== "text") {
@@ -133,10 +129,14 @@ function App() {
       <div className="flex flex-col gap-4 w-full max-w-2xl px-4 bg-secondary-300 rounded-lg m-4 mt-0 overflow-hidden">
         <div className="bg-secondary-100 flex flex-col w-full h-full rounded-lg overflow-scroll">
           {messageHistory.length === 0 && (
-              <DemoDiscussions onClick={demoMessageClickHandler} />
+            <DemoDiscussions onClick={demoMessageClickHandler} />
           )}
           {messageHistory.map((message, idx) => (
-            <MessageContainer message={message} key={idx} hideDecision={message.decision.length === 0} />
+            <MessageContainer
+              message={message}
+              key={idx}
+              hideDecision={message.decision.length === 0}
+            />
           ))}
 
           {executionState && executionState.progress != null && (
@@ -163,6 +163,14 @@ function App() {
                   decision: [],
                 };
                 onClickHandler(data);
+              }
+              if (e.code === "ArrowUp") {
+                const userData = messageHistory.filter(
+                  (m) => m.senderRole === "user",
+                );
+                if (userData.length > 0) {
+                  setInput(userData[userData.length - 1].fragments[0].text);
+                }
               }
             }}
           />
