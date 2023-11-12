@@ -51,7 +51,7 @@ class Orchestrator(OrchestratorBase):
         # Get timeline for predictions
         days = TimeModule(
             modelName="mistral-7B-instruct"
-        )
+        ).execute(handler=handler)
 
         # Convert days to months and round days/months
         months = np.ceil(days/30)
