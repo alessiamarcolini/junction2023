@@ -11,3 +11,7 @@ class OrchestrationPlan(TypedDict):
 class ExecutionReturn(TypedDict):
     orchestrationPlan: OrchestrationPlan
     messages: List[ChatCompletionRequestMessage]
+
+class ModuleResults(TypedDict):
+    text: Literal["steel", "energy"]
+    plot: str
