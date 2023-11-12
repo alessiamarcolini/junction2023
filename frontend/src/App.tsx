@@ -169,7 +169,10 @@ function App() {
                   (m) => m.senderRole === "user",
                 );
                 if (userData.length > 0) {
-                  setInput(userData[userData.length - 1].fragments[0].text);
+                  setInput(
+                    (userData[userData.length - 1].fragments[0] as TextFragment)
+                      .text,
+                  );
                 }
               }
             }}
