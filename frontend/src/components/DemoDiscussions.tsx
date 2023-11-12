@@ -15,15 +15,15 @@ export default function DemoDiscussions({onClick}: Props) {
                   fragments: [
                     {
                       type: "text",
-                      text: "What is the expected development of stainless steel market pricing for a specific alloy in the next month?",
+                      text: "Hello there!",
                     },
                     {
                       type: "text",
-                      text: "What recent news state about possible energy price developments over the next three months?",
+                      text: "Welcome to the EcoGen chatbot service! How can I help you today?",
                     },
                     {
                       type: "text",
-                      text: "What are the most recent patents granted in the area of stainless steel manufacturing?",
+                      text: "You might send your own questions or use one of our sample questions below.",
                     },
                   ],
                   decision: [],
