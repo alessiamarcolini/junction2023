@@ -1,6 +1,6 @@
 EXPLAINER_PROMPT = """
 <s>
-Question: What will the energy price be next month?
+Question: What will steel industry profitability look like in 3 months?
 STEEL PRICE MODEL:
     The model made the following predictions for the next 3 months:
     2023-10-01: 171.21900000000002
@@ -216,10 +216,27 @@ ENERGY PRICE MODEL:
     - the feature 'price_actual_t-X' means the actual price from X days before.
     - the feature 'generation_fossil_hard_coal' represents the coal generation in MW,
     - the feature 'generation_fossil_brown_coal/lignite' represents the coal/lignite generation in MW.
+Forecast days: 90
+Output: Looking at the model outputs for steel, the forecasted figure at the end of 3 months
+is 170.53. Looking at other values, they all hover around 170-171. The values for the
+past three months are all between 157-161. Given the past values are below the future values,
+the price index is suggested to increase in the next 90 days. The most important features used
+to produce this estimate were the STS for Basic iron and steel and ferro-alloys and STS for Electricity.
 
-Output: 
+The model outputs for energy price index are hovering between 58.64 and 63.28 for the last
+few forecasted values. Looking at the past few days, the index hovered around 72.61-65.49
+Given past prices are above future prices, it suggests a fall in energy prices 90 days ahead.
+The most relevant features to produce this estimate were past energy prices, actual total load
+and past seasonality.
+
+Returning to the question asked in the beginning, What will steel industry profitability look like in 3 months?
+steel prices are likely to increase while energy costs are forecasted to decrease. This suggests and
+increase in steel industry profitability.
 </s>
 
-Input: {userPrompt}
+Question: {userPrompt}
+Forecast days: {days}
+STEEL PRICE MODEL: {steelPriceModel}
+ENERGY PRICE MODEL: {energyPriceModel}
 Output: 
 """

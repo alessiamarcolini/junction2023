@@ -9,6 +9,7 @@ from modules.module_time import TimeModule
 from modules.module_energy import EnergyModule
 from modules.module_steel import SteelModule
 from modules.module_deny import DenyModule
+from modules.module_explainer import ExplainerModule
 
 # 3rd party packages
 import numpy as np
@@ -57,7 +58,10 @@ class Orchestrator(OrchestratorBase):
         days = np.ceil(days)
 
         # Call-out to energy module relevant modules
-        moduleResults = {}
+        moduleResults = {
+            "energy": {"text": ""},
+            "steel": {"text": ""}
+        }
         if "ENERGY PRICE FORECAST MODEL" in models:
             handler.update_status_message(f"Running energy forecast for {days} days...")
             logging.info(f"Running energy forecast for {days} days")
@@ -81,5 +85,16 @@ class Orchestrator(OrchestratorBase):
             }
 
         # Generate model summary
+        handler.update_progress_bar(50)
+        ExplainerModule(
+            modelName="mistral-7B-instruct"
+        ).execute(
+            handler=handler,
+            moduleResults=moduleResults,
+            days=days
+        )
+        handler.update_progress_bar(100)
+        handler.update_status_message("Done!")
+        handler.finalize()
         
             
