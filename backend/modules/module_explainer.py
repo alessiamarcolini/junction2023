@@ -23,9 +23,10 @@ correct. Here are some examples:
 
 SUMMARY_PROMPT = INTRO_PROMPT + EXPLAINER_PROMPT
 
+
 class ExplainerModule(ModuleBase):
-    def __init__(self, 
-        modelName: str = "mistral-7B-instruct"):
+    def __init__(self,
+                 modelName: str = "mistral-7B-instruct"):
         super().__init__()
         self.maxOutputTokens = 4096
         self.context = 8192
@@ -36,16 +37,17 @@ class ExplainerModule(ModuleBase):
         self.modelName = modelName
         self.stream = True
         self.__maxRetries = 3
-        self.__model = Llama(model_path=cfg.models[modelName], n_gpu_layers=128, n_ctx=self.context)
+        self.__model = Llama(
+            model_path=cfg.models[modelName], n_gpu_layers=128, n_ctx=self.context)
 
         logging.info(f"Initialized time model {modelName}")
-    
+
     def execute(
         self,
         handler: ModelHandler,
         moduleResults: ModuleResults,
         days: int,
-        ) -> None:
+    ) -> None:
         logging.info("Executing explainer function")
         self.__modelHandler = handler
         messages = handler.messages()
@@ -60,9 +62,9 @@ class ExplainerModule(ModuleBase):
             days=days,
             steelPriceModel=moduleResults["steel"]["text"],
             energyPriceModel=moduleResults["energy"]["text"]
-            )
+        )
         logging.info(f"Prompting summary model with: {summaryPrompt}")
-        tempMessages[-1]["content"] = timePrompt
+        tempMessages[-1]["content"] = summaryPrompt
 
         responseStream = self.__model.create_chat_completion(
             tempMessages,
@@ -79,6 +81,7 @@ class ExplainerModule(ModuleBase):
                     result.append(word)
 
                 except KeyError as e:
-                    logging.info(f"Key error encountered for summary model output stream {e}")
+                    logging.info(
+                        f"Key error encountered for summary model output stream {e}")
 
         logging.info(f"Summary response generated: {result}")
