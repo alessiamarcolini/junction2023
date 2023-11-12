@@ -1,6 +1,7 @@
 import uuid
 from typing import Any, List, Union
 import time
+import logging
 from .model_handler import ModelHandler
 
 
@@ -40,6 +41,6 @@ class SocketModelHandler(ModelHandler):
         self.__sio.emit("update_status_progress", progress)
 
     def send_debug_thoughts(self, thought: str) -> None:
-        print(f"Sending debug thought {thought}")
+        logging.info(f"Sending debug thought {thought}")
         self.__sio.emit("send_debug_thought", thought)
         pass
