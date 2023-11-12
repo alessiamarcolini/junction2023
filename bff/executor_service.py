@@ -33,8 +33,25 @@ def routes(sio):
                 f"unable to handle disconnection, because there is no registered executor for it {sid}"
             )
             return
+
+        execution = executor.execution
+        user_sio = executor.user_sio
+
         executor.stop()
         executors[sid] = None
+
+        if execution and user_sio:
+            try:
+                execution["status"] = "failed"
+                execution["progress"] = None
+                user_sio.emit("execution_updated", execution)
+                user_sio.emit(
+                    "text_received", {"id": execution["id"], "text": "<asset:error:>"}
+                )
+                user_sio.emit("finalize", execution)
+            except:
+                print("Unable to notify user about failed execution")
+                pass
 
     @sio.on("*")
     def handle_messages(event, sid, *args):
