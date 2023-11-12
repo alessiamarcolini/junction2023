@@ -43,7 +43,7 @@ class ExplainerModule(ModuleBase):
     def execute(
         self,
         handler: ModelHandler,
-        moduleResults: moduleResults,
+        moduleResults: ModuleResults,
         days: int,
         ) -> None:
         logging.info("Executing explainer function")
