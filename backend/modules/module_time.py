@@ -52,6 +52,14 @@ Output:{{
 }}
 </s>
 
+<s>
+Input: What is the price of steel, is it cheap or is it expensive?
+Output:{{
+    "reasoning": "The requested information can not be used as a time reference. Thus, I can not extract a time reference from the request.",
+    "days": null
+}}
+</s>
+
 Input: {userPrompt}
 Output: 
 """
