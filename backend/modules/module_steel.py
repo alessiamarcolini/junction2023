@@ -1,5 +1,6 @@
 import pickle
 from pathlib import Path
+import os
 
 import numpy as np
 import pandas as pd
@@ -16,7 +17,7 @@ class SteelModule(ModuleBase):
         self.feature_cols = ["Germany_electricity_index"]
 
     def _load_model(self, model_filename: str, horizon: int) -> BaseEstimator:
-        model_path = f"..//..//models/steel/{model_filename}.pkl"
+        model_path = f"/models/steel/{model_filename}"
         if Path(model_path).exists():
             with open(Path(model_path), "rb") as f:
                 model = pickle.load(f)
@@ -25,12 +26,13 @@ class SteelModule(ModuleBase):
                 f"Model {model_filename} does not exist. Training new model."
             )
             model = train(self.data, self.target_column, self.feature_cols, horizon=horizon)
-            with open(model_path, 'wb') as file:
+            with open(os.getcwd() + model_path, 'wb') as file:
                 pickle.dump(model, file)
         return model
     
     def _load_data(self, ):
-        input_folder = "../..//data"
+
+        input_folder = os.getcwd() + "/data"
         df = pd.read_csv(Path(f"{input_folder}/processed_steel_data.csv"))
         df_electricity = pd.read_csv(Path(f"{input_folder}/processed_eletricity_price_index.csv"))
 

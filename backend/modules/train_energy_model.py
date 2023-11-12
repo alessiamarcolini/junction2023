@@ -299,9 +299,9 @@ def _formulate_explanation_string(
     data_explanation += f"The previous {horizon} days had the following values:\n"
 
     latest_horizon_target_values = latest_horizon_target_values.reset_index()
-    latest_horizon_target_values["time"] = latest_horizon_target_values[
+    latest_horizon_target_values["time"] = pd.to_datetime(latest_horizon_target_values[
         "time"
-    ].dt.strftime("%Y-%m-%d")
+    ], utc=True).dt.strftime("%Y-%m-%d")
 
     data_explanation += _zip_string(
         latest_horizon_target_values["time"],
